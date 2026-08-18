@@ -1,0 +1,50 @@
+{
+  "name": "muthu",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint .",
+    "android:sync": "vite build && npx cap sync android",
+    "android:open": "npm run android:sync && npx cap open android",
+    "android:build": "npm run android:sync && cd android && .\\gradlew assembleDebug",
+    "publish-update": "node scripts/publish.js"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@vitejs/plugin-react": "^6.0.5",
+    "adm-zip": "^0.6.0",
+    "autoprefixer": "^10.5.4",
+    "eslint": "^10.8.1",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.4",
+    "globals": "^17.11.0",
+    "postcss": "^8.5.26",
+    "tailwindcss": "^3.4.19",
+    "vite": "^8.2.0"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/app": "^8.1.1",
+    "@capacitor/cli": "^8.5.0",
+    "@capacitor/core": "^8.5.0",
+    "@capacitor/filesystem": "^8.1.2",
+    "@capacitor/local-notifications": "^8.3.0",
+    "@capacitor/share": "^8.0.1",
+    "@capgo/capacitor-native-biometric": "^8.6.6",
+    "@capgo/capacitor-updater": "^8.51.13",
+    "@solimanware/capacitor-sms-reader": "^5.0.3",
+    "firebase": "^12.17.1",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
+    "lucide-react": "^1.31.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-is": "^19.2.8",
+    "react-router-dom": "^7.18.2",
+    "recharts": "^3.10.1"
+  }
+}

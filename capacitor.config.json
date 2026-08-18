@@ -1,0 +1,8 @@
+{
+  "appId": "com.muthu.finance",
+  "appName": "Muthu",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  }
+}
