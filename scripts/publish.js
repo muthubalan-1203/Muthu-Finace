@@ -22,7 +22,7 @@ zip.writeZip(path.resolve('dist.zip'));
 
 console.log('Pushing to GitHub...');
 try {
-  execSync('git add public/version.json dist.zip', { stdio: 'inherit' });
+  execSync('git add .', { stdio: 'inherit' });
   execSync(`git commit -m "OTA Update v${verData.version}"`, { stdio: 'inherit' });
   execSync('git push', { stdio: 'inherit' });
   console.log('✅ Successfully published OTA update to GitHub!');
