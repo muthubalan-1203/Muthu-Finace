@@ -222,7 +222,7 @@ export default function Dashboard() {
       {/* Top Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="page-title text-2xl font-black bg-gradient-to-r from-brand-500 to-brand-300 bg-clip-text text-transparent">
+          <h1 className="page-title text-2xl font-black bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">
             Welcome, {profileName || 'User'}! 👋
           </h1>
           <p className="text-sm text-ink-300 dark:text-ink-200 mt-1">Here's your financial overview</p>
