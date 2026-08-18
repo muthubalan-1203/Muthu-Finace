@@ -2,10 +2,8 @@ import { createContext, useContext, useState, useCallback, useEffect, useMemo } 
 import { getSettings, saveSettings } from '../utils/storage';
 
 const AppContext = createContext(null);
-
 export function AppProvider({ children }) {
   const [theme, setThemeState] = useState('system');
-  const [profileName, setProfileNameState] = useState('');
   const [toasts, setToasts] = useState([]);
   const [isLocked, setIsLocked] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -13,16 +11,20 @@ export function AppProvider({ children }) {
     const settings = getSettings();
     return settings.deviceProfile || 'Muthu';
   });
-  const [deviceProfile, setDeviceProfile] = useState(() => {
+  
+  const [deviceProfile, setDeviceProfileState] = useState(() => {
     const settings = getSettings();
     return settings.deviceProfile || 'Muthu';
+  });
+  const [profileName, setProfileNameState] = useState(() => {
+    const settings = getSettings();
+    const dp = settings.deviceProfile || 'Muthu';
+    return settings[`profileName_${dp}`] || dp;
   });
 
   useEffect(() => {
     const settings = getSettings();
     if (settings.theme) setThemeState(settings.theme);
-    if (settings.profileName) setProfileNameState(settings.profileName);
-    if (settings.deviceProfile) setDeviceProfile(settings.deviceProfile);
 
     const lockEnabled = settings.lockEnabled && settings.pinHash && settings.pinSalt;
     setIsLocked(!!lockEnabled);
@@ -190,7 +192,14 @@ export function AppProvider({ children }) {
 
   const setProfileName = useCallback((name) => {
     setProfileNameState(name);
-    saveSettings({ profileName: name });
+    saveSettings({ [`profileName_${deviceProfile}`]: name });
+  }, [deviceProfile]);
+
+  const setDeviceProfile = useCallback((dp) => {
+    setDeviceProfileState(dp);
+    saveSettings({ deviceProfile: dp });
+    const settings = getSettings();
+    setProfileNameState(settings[`profileName_${dp}`] || dp);
   }, []);
 
   const addToast = useCallback((message, type = 'success') => {

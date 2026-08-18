@@ -24,6 +24,10 @@ export default function Settings() {
   const [secAnswer, setSecAnswer] = useState('');
 
   useEffect(() => {
+    setName(profileName);
+  }, [profileName]);
+
+  useEffect(() => {
     const settings = getSettings();
     setLockEnabled(isLockEnabled());
     setSmsTrackingEnabled(!!settings.smsTrackingEnabled);
