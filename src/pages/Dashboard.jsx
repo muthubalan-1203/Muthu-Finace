@@ -23,7 +23,7 @@ export default function Dashboard() {
   const { year: curYear, month: curMonth } = getCurrentMonthYear();
   const [year, setYear] = useState(curYear);
   const [month, setMonth] = useState(curMonth);
-  const { addToast, refreshKey, viewFilter, setViewFilter } = useApp();
+  const { addToast, refreshKey, viewFilter, setViewFilter, profileName } = useApp();
   const [canShare, setCanShare] = useState(false);
   
   const [reminders, setReminders] = useState([]);
@@ -220,10 +220,12 @@ export default function Dashboard() {
   return (
     <div className="page-container">
       {/* Top Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4, mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="page-title">Dashboard</h1>
-          <p className="text-sm text-ink-300 dark:text-ink-200">Your financial overview</p>
+          <h1 className="page-title text-2xl font-black bg-gradient-to-r from-brand-500 to-brand-300 bg-clip-text text-transparent">
+            Welcome, {profileName || 'User'}! 👋
+          </h1>
+          <p className="text-sm text-ink-300 dark:text-ink-200 mt-1">Here's your financial overview</p>
         </div>
         
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">

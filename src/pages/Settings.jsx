@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getSettings, saveSettings } from '../utils/storage';
-import { createPinHash, isPinValid, isLockEnabled } from '../utils/security';
+import { createPinHash, isPinValid, isLockEnabled, createAnswerHash } from '../utils/security';
 import { useApp } from '../contexts/AppContext';
 import Modal from '../components/ui/Modal';
 import { Settings as SettingsIcon, User, Palette, Shield, Lock, Info, Sun, Moon, Monitor, MessageSquare, Image as ImageIcon, Trash2, CalendarDays } from 'lucide-react';
@@ -18,6 +18,10 @@ export default function Settings() {
   const [localDeviceProfile, setLocalDeviceProfile] = useState(deviceProfile || 'Muthu');
   const [lockScreenImage, setLockScreenImage] = useState(null);
   const [reviewMeetingDate, setReviewMeetingDate] = useState('1');
+  const [hasRecovery, setHasRecovery] = useState(false);
+  const [showRecoverySetup, setShowRecoverySetup] = useState(false);
+  const [secQuestion, setSecQuestion] = useState('What is your favorite color?');
+  const [secAnswer, setSecAnswer] = useState('');
 
   useEffect(() => {
     const settings = getSettings();
@@ -26,6 +30,7 @@ export default function Settings() {
     if (settings.deviceProfile) setLocalDeviceProfile(settings.deviceProfile);
     if (settings.lockScreenImage) setLockScreenImage(settings.lockScreenImage);
     if (settings.reviewMeetingDate) setReviewMeetingDate(settings.reviewMeetingDate);
+    if (settings.secQuestion && settings.secAnswerHash) setHasRecovery(true);
   }, []);
 
   function handleNameSave() {
@@ -62,9 +67,24 @@ export default function Settings() {
   }
 
   function handleDisableLock() {
-    saveSettings({ lockEnabled: false, pinHash: null, pinSalt: null });
+    const settings = getSettings();
+    saveSettings({ lockEnabled: false, pinHash: null, pinSalt: null, secQuestion: null, secAnswerHash: null, secAnswerSalt: null });
     setLockEnabled(false);
+    setHasRecovery(false);
     addToast('App lock disabled');
+  }
+
+  async function handleRecoverySetup() {
+    if (!secAnswer.trim()) {
+      addToast('Please enter an answer');
+      return;
+    }
+    const { salt, hash } = await createAnswerHash(secAnswer);
+    saveSettings({ secQuestion, secAnswerHash: hash, secAnswerSalt: salt });
+    setHasRecovery(true);
+    setShowRecoverySetup(false);
+    setSecAnswer('');
+    addToast('Recovery question set');
   }
 
   function resetPinForm() {
@@ -230,27 +250,43 @@ export default function Settings() {
       </div>
 
       {/* Security */}
-      <div className="card mb-4">
-        <h2 className="flex items-center gap-2 section-title">
-          <Shield className="w-4 h-4 text-brand-500" /> Security
+      <div className="card space-y-4 mb-4">
+        <h2 className="text-lg font-bold text-ink dark:text-cream-50 flex items-center gap-2">
+          <Shield className="w-5 h-5 text-brand-500" /> App Security
         </h2>
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-ink dark:text-cream-50">App Lock</p>
-              <p className="text-xs text-ink-300 dark:text-ink-200">Require PIN to open the app</p>
-            </div>
-            {lockEnabled ? (
-              <div className="flex items-center gap-2">
-                <span className="badge badge-green"><Lock className="w-3 h-3 mr-0.5" />Enabled</span>
-                <button onClick={handleDisableLock} className="btn-secondary text-xs">Disable</button>
-                <button onClick={() => setShowPinSetup(true)} className="btn-secondary text-xs">Change PIN</button>
-              </div>
-            ) : (
-              <button onClick={() => setShowPinSetup(true)} className="btn-primary text-xs">Enable</button>
-            )}
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="font-medium text-ink dark:text-cream-50">App Lock (PIN)</p>
+            <p className="text-sm text-ink-300 dark:text-ink-200">Require PIN to open app</p>
           </div>
+          <button
+            onClick={() => lockEnabled ? handleDisableLock() : setShowPinSetup(true)}
+            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+              lockEnabled 
+                ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 hover:bg-red-200' 
+                : 'bg-brand-100 text-brand-600 dark:bg-brand-900/30 dark:text-brand-400 hover:bg-brand-200'
+            }`}
+          >
+            {lockEnabled ? 'Disable' : 'Enable'}
+          </button>
         </div>
+        
+        {lockEnabled && (
+          <div className="flex items-center justify-between pt-4 border-t border-ink-100 dark:border-ink-800">
+            <div>
+              <p className="font-medium text-ink dark:text-cream-50">Recovery Question</p>
+              <p className="text-sm text-ink-300 dark:text-ink-200">
+                {hasRecovery ? 'Set up successfully' : 'Not set (Recommended)'}
+              </p>
+            </div>
+            <button
+              onClick={() => setShowRecoverySetup(true)}
+              className="btn-secondary text-sm"
+            >
+              {hasRecovery ? 'Change' : 'Set Up'}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Automation & Reminders */}
@@ -383,6 +419,44 @@ export default function Settings() {
           </div>
         </div>
       </Modal>
+      <Modal
+        isOpen={showRecoverySetup}
+        onClose={() => setShowRecoverySetup(false)}
+        title="Recovery Question"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-ink-400 dark:text-ink-300 mb-1">Select Question</label>
+            <select
+              value={secQuestion}
+              onChange={(e) => setSecQuestion(e.target.value)}
+              className="input-base w-full"
+            >
+              <option value="What is your favorite color?">What is your favorite color?</option>
+              <option value="What is your pet's name?">What is your pet's name?</option>
+              <option value="What city were you born in?">What city were you born in?</option>
+              <option value="What is your mother's maiden name?">What is your mother's maiden name?</option>
+              <option value="What was your first car?">What was your first car?</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-ink-400 dark:text-ink-300 mb-1">Your Answer</label>
+            <input
+              type="text"
+              value={secAnswer}
+              onChange={(e) => setSecAnswer(e.target.value)}
+              className="input-base w-full"
+              placeholder="Enter your secret answer"
+            />
+            <p className="text-xs text-ink-300 mt-2">This will be used to reset your PIN if you forget it. Answers are not case-sensitive.</p>
+          </div>
+          <div className="flex justify-end gap-2 mt-6">
+            <button onClick={() => setShowRecoverySetup(false)} className="btn-secondary">Cancel</button>
+            <button onClick={handleRecoverySetup} className="btn-primary">Save</button>
+          </div>
+        </div>
+      </Modal>
+
     </div>
   );
 }

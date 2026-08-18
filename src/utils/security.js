@@ -25,8 +25,24 @@ export async function createPinHash(pin) {
   return { salt, hash };
 }
 
+export async function hashAnswer(answer, salt) {
+  const cleanAnswer = (answer || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  return await hashPin(cleanAnswer, salt);
+}
+
+export async function createAnswerHash(answer) {
+  const salt = generateSalt();
+  const hash = await hashAnswer(answer, salt);
+  return { salt, hash };
+}
+
 export async function verifyPin(pin, salt, storedHash) {
   const hash = await hashPin(pin, salt);
+  return hash === storedHash;
+}
+
+export async function verifyAnswer(answer, salt, storedHash) {
+  const hash = await hashAnswer(answer, salt);
   return hash === storedHash;
 }
 

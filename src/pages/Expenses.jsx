@@ -15,7 +15,7 @@ export default function Expenses() {
   const { year: curYear, month: curMonth } = getCurrentMonthYear();
   const [year, setYear] = useState(curYear);
   const [month, setMonth] = useState(curMonth);
-  const [timeFilter, setTimeFilter] = useState('This Month');
+  const [timeFilter, setTimeFilter] = useState('Today');
   const [search, setSearch] = useState('');
   const [filterCat, setFilterCat] = useState('');
   const [showForm, setShowForm] = useState(false);
