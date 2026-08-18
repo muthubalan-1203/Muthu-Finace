@@ -25,12 +25,9 @@ export default function App() {
     async function checkOTA() {
       if (!Capacitor.isNativePlatform()) return;
       try {
-        // IMPORTANT: Replace YOUR_USERNAME and YOUR_REPO with actual GitHub details
-        const GITHUB_USERNAME = 'muthubalan-1203';
-        const GITHUB_REPO = 'Muthu-Finace';
-        
-        // Fetch remote version
-        const res = await fetch(`https://raw.githubusercontent.com/${GITHUB_USERNAME}/${GITHUB_REPO}/main/public/version.json?t=${Date.now()}`);
+        // Fetch remote version from Firebase Hosting (Instant Cache)
+        const FIREBASE_URL = 'https://muthu-abi-e3b3d.web.app';
+        const res = await fetch(`${FIREBASE_URL}/version.json?t=${Date.now()}`);
         const remoteData = await res.json();
         
         // Fetch local version
@@ -39,7 +36,7 @@ export default function App() {
 
         if (remoteData.version > localData.version) {
           console.log(`Update available: ${localData.version} -> ${remoteData.version}`);
-          const zipUrl = `https://github.com/${GITHUB_USERNAME}/${GITHUB_REPO}/raw/main/dist.zip`;
+          const zipUrl = `${FIREBASE_URL}/dist.zip`;
           
           await CapacitorUpdater.download({
             url: zipUrl,
