@@ -38,12 +38,14 @@ export default function App() {
           console.log(`Update available: ${localData.version} -> ${remoteData.version}`);
           const zipUrl = `${FIREBASE_URL}/dist.zip`;
           
-          await CapacitorUpdater.download({
+          const bundle = await CapacitorUpdater.download({
             url: zipUrl,
             version: String(remoteData.version)
           });
           
-          await CapacitorUpdater.set({ id: String(remoteData.version) });
+          await CapacitorUpdater.set(bundle);
+          // Reload to apply the new bundle immediately
+          CapacitorUpdater.reload();
         }
       } catch (e) {
         console.error('OTA Update check failed:', e);
