@@ -15,6 +15,7 @@ import {
   TrendingUp,
   Menu,
   X,
+  Landmark,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -28,6 +29,7 @@ const mainLinks = [
   { to: '/bills', icon: Receipt, label: 'Bills' },
   { to: '/goals', icon: Target, label: 'Goals' },
   { to: '/plans', icon: ClipboardList, label: 'Plans' },
+  { to: '/loans', icon: Landmark, label: 'Loans' },
   { to: '/reports', icon: BarChart3, label: 'Reports' },
   { to: '/calendar', icon: CalendarDays, label: 'Calendar' },
   { to: '/settings', icon: Settings, label: 'Settings' },

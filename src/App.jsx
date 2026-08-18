@@ -15,6 +15,7 @@ import Savings from './pages/Savings';
 import Bills from './pages/Bills';
 import Goals from './pages/Goals';
 import Plans from './pages/Plans';
+import Loans from './pages/Loans';
 import Reports from './pages/Reports';
 import Calendar from './pages/Calendar';
 import Settings from './pages/Settings';
@@ -130,6 +131,7 @@ export default function App() {
             <Route path="/bills" element={<Bills />} />
             <Route path="/goals" element={<Goals />} />
             <Route path="/plans" element={<Plans />} />
+            <Route path="/loans" element={<Loans />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/settings" element={<Settings />} />
