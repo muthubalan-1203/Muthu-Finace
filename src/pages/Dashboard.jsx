@@ -19,6 +19,14 @@ import {
 
 const COLORS = ['#0F6E5E', '#17B890', '#2DD4BF', '#5EEAD4', '#99F6E4', '#CCFBF1', '#0D9488', '#14B8A6', '#A7F3D0', '#6EE7B7'];
 
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good Morning';
+  if (h < 17) return 'Good Afternoon';
+  if (h < 20) return 'Good Evening';
+  return 'Good Night';
+}
+
 export default function Dashboard() {
   const { year: curYear, month: curMonth } = getCurrentMonthYear();
   const [year, setYear] = useState(curYear);
@@ -223,7 +231,7 @@ export default function Dashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="page-title text-2xl font-black bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">
-            Welcome, {profileName || 'User'}! 👋
+            {getGreeting()}, {profileName || 'User'}! 👋
           </h1>
           <p className="text-sm text-ink-300 dark:text-ink-200 mt-1">Here's your financial overview</p>
         </div>
