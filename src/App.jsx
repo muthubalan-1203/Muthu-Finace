@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
 import { AppProvider } from './contexts/AppContext';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
@@ -21,31 +21,30 @@ import Settings from './pages/Settings';
 import Backup from './pages/Backup';
 
 export default function App() {
+  // null = checking, false = no update, object = bundle ready to install
+  const [pendingBundle, setPendingBundle] = useState(null);
+  const [isInstalling, setIsInstalling] = useState(false);
+
   useEffect(() => {
     async function checkOTA() {
       if (!Capacitor.isNativePlatform()) return;
       try {
-        // Fetch remote version from Firebase Hosting (Instant Cache)
         const FIREBASE_URL = 'https://muthu-abi-e3b3d.web.app';
         const res = await fetch(`${FIREBASE_URL}/version.json?t=${Date.now()}`);
         const remoteData = await res.json();
-        
-        // Fetch local version
+
         const localRes = await fetch('./version.json');
         const localData = await localRes.json();
 
         if (remoteData.version > localData.version) {
           console.log(`Update available: ${localData.version} -> ${remoteData.version}`);
-          const zipUrl = `${FIREBASE_URL}/dist.zip`;
-          
+          // Pre-download silently in the background
           const bundle = await CapacitorUpdater.download({
-            url: zipUrl,
-            version: String(remoteData.version)
+            url: `${FIREBASE_URL}/dist.zip`,
+            version: String(remoteData.version),
           });
-          
-          await CapacitorUpdater.set(bundle);
-          // Reload to apply the new bundle immediately
-          CapacitorUpdater.reload();
+          // Show the banner — update is ready to install
+          setPendingBundle(bundle);
         }
       } catch (e) {
         console.error('OTA Update check failed:', e);
@@ -54,9 +53,71 @@ export default function App() {
     checkOTA();
   }, []);
 
+  async function installUpdate() {
+    if (!pendingBundle || isInstalling) return;
+    setIsInstalling(true);
+    try {
+      await CapacitorUpdater.set(pendingBundle);
+      CapacitorUpdater.reload();
+    } catch (e) {
+      console.error('Failed to install update:', e);
+      setIsInstalling(false);
+    }
+  }
+
   return (
     <AppProvider>
       <LockScreen />
+
+      {/* ── OTA Update Banner ── */}
+      {pendingBundle && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 9999,
+            background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
+            color: '#fff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '10px 16px',
+            gap: 12,
+            boxShadow: '0 2px 12px rgba(0,0,0,0.25)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 18 }}>🚀</span>
+            <span style={{ fontSize: 13, fontWeight: 600 }}>
+              {isInstalling ? 'Installing update...' : 'New update available!'}
+            </span>
+          </div>
+          {!isInstalling && (
+            <button
+              onClick={installUpdate}
+              style={{
+                background: '#fff',
+                color: '#4f46e5',
+                border: 'none',
+                borderRadius: 8,
+                padding: '6px 14px',
+                fontWeight: 700,
+                fontSize: 12,
+                cursor: 'pointer',
+                flexShrink: 0,
+              }}
+            >
+              Update &amp; Restart
+            </button>
+          )}
+          {isInstalling && (
+            <span style={{ fontSize: 13, opacity: 0.85 }}>Restarting...</span>
+          )}
+        </div>
+      )}
+
       <HashRouter>
         <Layout>
           <Routes>
