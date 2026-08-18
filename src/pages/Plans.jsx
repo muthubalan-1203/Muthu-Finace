@@ -7,13 +7,182 @@ import Modal, { ConfirmModal } from '../components/ui/Modal';
 import EmptyState from '../components/ui/EmptyState';
 import { formatDate, getCurrentMonthYear } from '../utils/formatters';
 import MonthPicker from '../components/ui/MonthPicker';
-import { Plus, ClipboardList, Edit3, Trash2, Calendar, Tag, X } from 'lucide-react';
+import { Plus, ClipboardList, Edit3, Trash2, Calendar, Tag, X, StickyNote, ChevronDown, ChevronUp, Send, Pencil, Check } from 'lucide-react';
+
+// ─── Per-Plan Notes Panel ───────────────────────────────────────────────────
+function PlanNotes({ plan, deviceProfile, addToast, triggerRefresh, refreshKey }) {
+  const [expanded, setExpanded] = useState(false);
+  const [noteText, setNoteText] = useState('');
+  const [editingNoteId, setEditingNoteId] = useState(null);
+  const [editingText, setEditingText] = useState('');
+  const [deleteNoteId, setDeleteNoteId] = useState(null);
+
+  const notes = useMemo(() => {
+    return getAll('planNotes')
+      .filter((n) => n.planId === plan.id)
+      .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  }, [plan.id, refreshKey]);
+
+  function handleAddNote(e) {
+    e.preventDefault();
+    const text = noteText.trim();
+    if (!text) return;
+    addItem('planNotes', { planId: plan.id, text });
+    setNoteText('');
+    addToast('Note added');
+    triggerRefresh();
+  }
+
+  function startEditNote(note) {
+    setEditingNoteId(note.id);
+    setEditingText(note.text);
+  }
+
+  function saveEditNote(note) {
+    const text = editingText.trim();
+    if (!text) return;
+    updateItem('planNotes', note.id, { text });
+    setEditingNoteId(null);
+    setEditingText('');
+    addToast('Note updated');
+    triggerRefresh();
+  }
+
+  function confirmDeleteNote() {
+    deleteItem('planNotes', deleteNoteId);
+    setDeleteNoteId(null);
+    addToast('Note deleted');
+    triggerRefresh();
+  }
+
+  const profileColors = { Muthu: 'bg-brand-500', Abi: 'bg-purple-500' };
+  const profileBadgeColors = {
+    Muthu: 'bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300',
+    Abi: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
+  };
+
+  return (
+    <div className="mt-3 border-t border-cream-200 dark:border-ink-600 pt-3">
+      <button
+        onClick={() => setExpanded((v) => !v)}
+        className="flex items-center gap-1.5 text-xs font-medium text-ink-300 dark:text-ink-200 hover:text-brand-600 dark:hover:text-brand-400 transition-colors"
+      >
+        <StickyNote className="w-3.5 h-3.5" />
+        {notes.length > 0 ? `${notes.length} Note${notes.length > 1 ? 's' : ''}` : 'Notes'}
+        {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+      </button>
+
+      {expanded && (
+        <div className="mt-3 space-y-3">
+          {notes.length === 0 && (
+            <p className="text-xs text-ink-300 dark:text-ink-400 italic">No notes yet. Be the first to add one!</p>
+          )}
+          {notes.map((note) => {
+            const isOwner = (note.addedBy || 'Muthu') === deviceProfile;
+            const avatarColor = profileColors[note.addedBy] || 'bg-gray-400';
+            const badgeColor = profileBadgeColors[note.addedBy] || 'bg-gray-100 text-gray-600';
+            const isEditing = editingNoteId === note.id;
+
+            return (
+              <div key={note.id} className="flex gap-2.5 group">
+                <div className={`w-6 h-6 rounded-full ${avatarColor} flex items-center justify-center flex-shrink-0 mt-0.5`}>
+                  <span className="text-white text-[9px] font-bold">
+                    {(note.addedBy || 'M')[0].toUpperCase()}
+                  </span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${badgeColor}`}>
+                      {note.addedBy || 'Muthu'}
+                    </span>
+                    <span className="text-[10px] text-ink-300 dark:text-ink-400">
+                      {note.updatedAt
+                        ? `edited · ${formatDate(note.updatedAt)}`
+                        : formatDate(note.createdAt)}
+                    </span>
+                  </div>
+                  {isEditing ? (
+                    <div className="flex gap-2 items-start">
+                      <textarea
+                        className="input-base text-sm flex-1 min-h-[60px] resize-none"
+                        value={editingText}
+                        onChange={(e) => setEditingText(e.target.value)}
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveEditNote(note); }
+                          if (e.key === 'Escape') setEditingNoteId(null);
+                        }}
+                      />
+                      <div className="flex flex-col gap-1">
+                        <button onClick={() => saveEditNote(note)} className="p-1.5 rounded-lg bg-brand-500 hover:bg-brand-600 text-white transition-colors">
+                          <Check className="w-3.5 h-3.5" />
+                        </button>
+                        <button onClick={() => setEditingNoteId(null)} className="p-1.5 rounded-lg hover:bg-cream-300 dark:hover:bg-ink-600 transition-colors">
+                          <X className="w-3.5 h-3.5 text-ink-300" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-start gap-1 group/note">
+                      <p className="text-sm text-ink dark:text-cream-50 whitespace-pre-wrap break-words flex-1 bg-cream-100 dark:bg-ink-700 rounded-lg px-3 py-2 leading-relaxed">
+                        {note.text}
+                      </p>
+                      {isOwner && (
+                        <div className="flex flex-col gap-1 opacity-0 group-hover/note:opacity-100 transition-opacity flex-shrink-0">
+                          <button onClick={() => startEditNote(note)} className="p-1.5 rounded-lg hover:bg-cream-300 dark:hover:bg-ink-600 transition-colors">
+                            <Pencil className="w-3 h-3 text-ink-300" />
+                          </button>
+                          <button onClick={() => setDeleteNoteId(note.id)} className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                            <Trash2 className="w-3 h-3 text-red-400" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Add note */}
+          <form onSubmit={handleAddNote} className="flex gap-2 items-end pt-1">
+            <textarea
+              className="input-base text-sm flex-1 resize-none min-h-[60px]"
+              placeholder="Write a note... (Enter to send)"
+              value={noteText}
+              onChange={(e) => setNoteText(e.target.value)}
+              rows={2}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAddNote(e); }
+              }}
+            />
+            <button
+              type="submit"
+              disabled={!noteText.trim()}
+              className="p-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 disabled:opacity-40 disabled:cursor-not-allowed text-white transition-colors flex-shrink-0"
+            >
+              <Send className="w-4 h-4" />
+            </button>
+          </form>
+        </div>
+      )}
+
+      <ConfirmModal
+        isOpen={!!deleteNoteId}
+        onClose={() => setDeleteNoteId(null)}
+        onConfirm={confirmDeleteNote}
+        title="Delete Note"
+        message="Are you sure you want to delete this note?"
+      />
+    </div>
+  );
+}
 
 export default function Plans() {
   const { year: curYear, month: curMonth } = getCurrentMonthYear();
   const [year, setYear] = useState(curYear);
   const [month, setMonth] = useState(curMonth);
-  const { addToast, refreshKey, triggerRefresh, viewFilter, canEdit } = useApp();
+  const { addToast, refreshKey, triggerRefresh, viewFilter, canEdit, deviceProfile } = useApp();
   const [search, setSearch] = useState('');
   const [filterTag, setFilterTag] = useState('');
   const [showForm, setShowForm] = useState(false);
@@ -173,6 +342,15 @@ export default function Plans() {
                   ))}
                 </div>
               )}
+
+              {/* ── Notes Section ── */}
+              <PlanNotes
+                plan={plan}
+                deviceProfile={deviceProfile}
+                addToast={addToast}
+                triggerRefresh={triggerRefresh}
+                refreshKey={refreshKey}
+              />
             </div>
           ))}
         </div>
