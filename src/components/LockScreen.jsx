@@ -4,6 +4,31 @@ import { verifyPin, isLockEnabled, isBiometricAvailable, verifyAnswer, createPin
 import { getSettings, clearAllData, saveSettings } from '../utils/storage';
 import { Delete, Fingerprint, AlertTriangle, KeyRound } from 'lucide-react';
 
+// Greeting based on time of day
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good Morning 🌅';
+  if (h < 17) return 'Good Afternoon ☀️';
+  if (h < 20) return 'Good Evening 🌇';
+  return 'Good Night 🌙';
+}
+
+// Animated floating orb
+function Orb({ style }) {
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        borderRadius: '50%',
+        filter: 'blur(60px)',
+        opacity: 0.35,
+        animation: 'floatOrb 8s ease-in-out infinite alternate',
+        ...style,
+      }}
+    />
+  );
+}
+
 export default function LockScreen() {
   const { isLocked, unlock } = useApp();
   const [pin, setPin] = useState('');
@@ -160,193 +185,239 @@ export default function LockScreen() {
 
   const digits = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', 'del'];
 
+  // ─── Keyframe styles injected once ────────────────────────────────────────
+  const keyframes = `
+    @keyframes floatOrb {
+      0%   { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(20px, -30px) scale(1.15); }
+    }
+    @keyframes dotPop {
+      0%   { transform: scale(1); }
+      50%  { transform: scale(1.4); }
+      100% { transform: scale(1.1); }
+    }
+    @keyframes shakeX {
+      0%, 100% { transform: translateX(0); }
+      20%       { transform: translateX(-8px); }
+      40%       { transform: translateX(8px); }
+      60%       { transform: translateX(-6px); }
+      80%       { transform: translateX(6px); }
+    }
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  `;
+
+  const bgStyle = bgImage
+    ? { backgroundImage: `url(${bgImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+    : {};
+
   return (
-    <div 
-      className="fixed inset-0 z-[100] flex flex-col items-center justify-center px-6"
-      style={bgImage ? { backgroundImage: `url(${bgImage})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}
-    >
-      <div className={`absolute inset-0 ${bgImage ? 'bg-black/50 backdrop-blur-md' : 'bg-gradient-to-b from-brand-800 to-ink'}`} />
-      
-      <div className="relative z-10 w-full max-w-xs flex flex-col items-center">
+    <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center px-6 overflow-hidden" style={bgStyle}>
+      <style>{keyframes}</style>
+
+      {/* ── Background ── */}
+      {!bgImage && (
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(145deg, #0f0c29, #1a103d, #0f0c29)' }} />
+      )}
+      {bgImage && <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(12px)' }} />}
+
+      {/* ── Floating orbs ── */}
+      {!bgImage && (
+        <>
+          <Orb style={{ width: 320, height: 320, background: '#6366f1', top: '-80px', left: '-80px', animationDuration: '9s' }} />
+          <Orb style={{ width: 260, height: 260, background: '#8b5cf6', bottom: '60px', right: '-60px', animationDuration: '7s', animationDelay: '1s' }} />
+          <Orb style={{ width: 180, height: 180, background: '#06b6d4', top: '40%', left: '55%', animationDuration: '11s', animationDelay: '2s' }} />
+        </>
+      )}
+
+      {/* ── Content ── */}
+      <div style={{ position: 'relative', zIndex: 10, width: '100%', maxWidth: 340, display: 'flex', flexDirection: 'column', alignItems: 'center', animation: 'fadeSlideUp 0.5s ease-out both' }}>
+
+        {/* ── RESET PANEL ── */}
         {showReset ? (
-          <div className="w-full animate-fade-in">
-            <div className="flex flex-col items-center mb-8">
-            <AlertTriangle className="w-12 h-12 text-amber-400 mb-4" />
-            <h2 className="text-white font-display font-bold text-xl mb-2">Reset App Data?</h2>
-            <p className="text-brand-200 text-sm text-center">
-              This will permanently delete all your data. This action cannot be undone.
-            </p>
-          </div>
-          <div className="mb-4">
-            <label className="text-brand-200 text-xs mb-1 block">Type RESET to confirm</label>
+          <div style={{ width: '100%', background: 'rgba(255,255,255,0.07)', backdropFilter: 'blur(20px)', borderRadius: 24, border: '1px solid rgba(255,255,255,0.12)', padding: 28 }}>
+            <div style={{ textAlign: 'center', marginBottom: 24 }}>
+              <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(251,191,36,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                <AlertTriangle style={{ width: 28, height: 28, color: '#fbbf24' }} />
+              </div>
+              <h2 style={{ color: '#fff', fontWeight: 700, fontSize: 20, marginBottom: 8 }}>Reset App Data?</h2>
+              <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: 13, lineHeight: 1.5 }}>
+                This will permanently delete all your data. This action cannot be undone.
+              </p>
+            </div>
+            <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, display: 'block', marginBottom: 6 }}>Type RESET to confirm</label>
             <input
               type="text"
               value={confirmReset}
               onChange={(e) => setConfirmReset(e.target.value.toUpperCase())}
-              className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 text-center font-mono tracking-widest focus:outline-none focus:ring-2 focus:ring-brand-400"
+              style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', textAlign: 'center', fontFamily: 'monospace', letterSpacing: '0.2em', fontSize: 14, outline: 'none', boxSizing: 'border-box', marginBottom: 16 }}
               placeholder="RESET"
             />
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button onClick={() => { setShowReset(false); setConfirmReset(''); }}
+                style={{ flex: 1, padding: '12px 0', borderRadius: 12, border: '1px solid rgba(255,255,255,0.15)', background: 'transparent', color: '#fff', fontSize: 14, fontWeight: 500, cursor: 'pointer' }}>
+                Cancel
+              </button>
+              <button onClick={handleResetConfirm} disabled={confirmReset !== 'RESET'}
+                style={{ flex: 1, padding: '12px 0', borderRadius: 12, border: 'none', background: confirmReset === 'RESET' ? '#dc2626' : 'rgba(220,38,38,0.3)', color: '#fff', fontSize: 14, fontWeight: 600, cursor: confirmReset === 'RESET' ? 'pointer' : 'not-allowed' }}>
+                Reset All Data
+              </button>
+            </div>
           </div>
-          <div className="flex gap-3">
-            <button
-              onClick={() => {
-                setShowReset(false);
-                setConfirmReset('');
-              }}
-              className="flex-1 py-3 rounded-xl border border-white/20 text-white text-sm font-medium hover:bg-white/10 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleResetConfirm}
-              disabled={confirmReset !== 'RESET'}
-              className="flex-1 py-3 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-40"
-            >
-              Reset All Data
-            </button>
-          </div>
-          </div>
+
         ) : showRecovery ? (
-          <div className="w-full animate-fade-in">
-            <div className="flex flex-col items-center mb-6">
-              <div className="w-12 h-12 rounded-full bg-brand-500/20 flex items-center justify-center mb-4">
-                <KeyRound className="w-6 h-6 text-brand-300" />
+          /* ── RECOVERY PANEL ── */
+          <div style={{ width: '100%', background: 'rgba(255,255,255,0.07)', backdropFilter: 'blur(20px)', borderRadius: 24, border: '1px solid rgba(255,255,255,0.12)', padding: 28 }}>
+            <div style={{ textAlign: 'center', marginBottom: 24 }}>
+              <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(99,102,241,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                <KeyRound style={{ width: 26, height: 26, color: '#a5b4fc' }} />
               </div>
-              <h2 className="text-white font-display font-bold text-xl mb-2">Reset PIN</h2>
-              <p className="text-brand-200 text-sm text-center">
-                {recoveryStep === 'answer' ? 'Answer your security question' : recoveryStep === 'new-pin' ? 'Enter a new PIN (4-6 digits)' : 'Confirm your new PIN'}
+              <h2 style={{ color: '#fff', fontWeight: 700, fontSize: 20, marginBottom: 6 }}>Reset PIN</h2>
+              <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13 }}>
+                {recoveryStep === 'answer' ? 'Answer your security question' : recoveryStep === 'new-pin' ? 'Enter a new PIN (4–6 digits)' : 'Confirm your new PIN'}
               </p>
             </div>
-            
-            {recoveryError && <p className="text-red-400 text-xs text-center mb-4 animate-pop-in">{recoveryError}</p>}
-            
-            <div className="mb-6">
+            {recoveryError && <p style={{ color: '#f87171', fontSize: 12, textAlign: 'center', marginBottom: 12 }}>{recoveryError}</p>}
+            <div style={{ marginBottom: 20 }}>
               {recoveryStep === 'answer' && (
-                <div className="space-y-3">
-                  <p className="text-white text-sm font-medium">{getSettings().secQuestion}</p>
-                  <input
-                    type="text"
-                    value={recoveryAnswer}
-                    onChange={(e) => setRecoveryAnswer(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-brand-400"
-                    placeholder="Your answer"
-                  />
+                <div>
+                  <p style={{ color: '#fff', fontSize: 14, marginBottom: 10, fontWeight: 500 }}>{getSettings().secQuestion}</p>
+                  <input type="text" value={recoveryAnswer} onChange={(e) => setRecoveryAnswer(e.target.value)}
+                    style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+                    placeholder="Your answer" />
                 </div>
               )}
               {recoveryStep === 'new-pin' && (
-                <input
-                  type="password"
-                  inputMode="numeric"
-                  value={newPin}
+                <input type="password" inputMode="numeric" value={newPin}
                   onChange={(e) => setNewPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white text-center font-mono tracking-[1em] focus:outline-none focus:ring-2 focus:ring-brand-400"
-                  placeholder="NEW PIN"
-                />
+                  style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', textAlign: 'center', fontFamily: 'monospace', letterSpacing: '0.3em', fontSize: 20, outline: 'none', boxSizing: 'border-box' }}
+                  placeholder="• • • • • •" />
               )}
               {recoveryStep === 'confirm-pin' && (
-                <input
-                  type="password"
-                  inputMode="numeric"
-                  value={confirmNewPin}
+                <input type="password" inputMode="numeric" value={confirmNewPin}
                   onChange={(e) => setConfirmNewPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white text-center font-mono tracking-[1em] focus:outline-none focus:ring-2 focus:ring-brand-400"
-                  placeholder="CONFIRM PIN"
-                />
+                  style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', textAlign: 'center', fontFamily: 'monospace', letterSpacing: '0.3em', fontSize: 20, outline: 'none', boxSizing: 'border-box' }}
+                  placeholder="• • • • • •" />
               )}
             </div>
-            
-            <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  setShowRecovery(false);
-                  setRecoveryStep('answer');
-                  setRecoveryAnswer('');
-                  setNewPin('');
-                  setConfirmNewPin('');
-                  setRecoveryError('');
-                }}
-                className="flex-1 py-3 rounded-xl border border-white/20 text-white text-sm font-medium hover:bg-white/10 transition-colors"
-              >
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button onClick={() => { setShowRecovery(false); setRecoveryStep('answer'); setRecoveryAnswer(''); setNewPin(''); setConfirmNewPin(''); setRecoveryError(''); }}
+                style={{ flex: 1, padding: '12px 0', borderRadius: 12, border: '1px solid rgba(255,255,255,0.15)', background: 'transparent', color: '#fff', fontSize: 14, fontWeight: 500, cursor: 'pointer' }}>
                 Cancel
               </button>
-              <button
-                onClick={handleRecoverySubmit}
-                className="flex-1 py-3 rounded-xl bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 transition-colors"
-              >
+              <button onClick={handleRecoverySubmit}
+                style={{ flex: 1, padding: '12px 0', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
                 Continue
               </button>
             </div>
           </div>
+
         ) : (
-          <div className="w-full animate-fade-in">
-          <div className="flex flex-col items-center mb-8">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-800 flex items-center justify-center mb-4 shadow-lg">
-              <span className="text-cream-50 font-mono font-bold text-2xl">₹</span>
+          /* ── MAIN PIN PAD ── */
+          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+
+            {/* App icon + greeting */}
+            <div style={{ marginBottom: 32, textAlign: 'center' }}>
+              <div style={{
+                width: 80, height: 80, borderRadius: 24,
+                background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #06b6d4 100%)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                margin: '0 auto 16px',
+                boxShadow: '0 0 0 1px rgba(255,255,255,0.15), 0 20px 40px rgba(99,102,241,0.4)',
+              }}>
+                <span style={{ color: '#fff', fontWeight: 900, fontSize: 34, fontFamily: 'monospace' }}>₹</span>
+              </div>
+              <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, marginBottom: 4 }}>{getGreeting()}</p>
+              <h1 style={{ color: '#fff', fontWeight: 800, fontSize: 28, letterSpacing: '-0.5px' }}>Muthu Finance</h1>
+              <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, marginTop: 4 }}>Enter your PIN to unlock</p>
             </div>
-            <h1 className="text-white font-display font-bold text-2xl mb-1">Muthu</h1>
-            <p className="text-brand-200 text-sm">Enter your PIN to unlock</p>
-          </div>
 
-          <div className="flex justify-center gap-3 mb-6">
-            {Array.from({ length: pinLength }).map((_, i) => (
-              <div
-                key={i}
-                className={`w-3 h-3 rounded-full transition-all duration-200 ${
-                  i < pin.length ? 'bg-brand-400 scale-110' : 'bg-white/20'
-                }`}
-              />
-            ))}
-          </div>
-
-          {error && (
-            <p className="text-red-400 text-xs text-center mb-4 animate-pop-in">{error}</p>
-          )}
-
-          <div className="grid grid-cols-3 gap-3 mb-6">
-            {digits.map((d, i) => {
-              if (d === '') return <div key={i} />;
-              if (d === 'del') {
+            {/* PIN dots */}
+            <div style={{ display: 'flex', gap: 14, marginBottom: 8, justifyContent: 'center', animation: error ? 'shakeX 0.35s ease' : 'none' }}>
+              {Array.from({ length: pinLength }).map((_, i) => {
+                const filled = i < pin.length;
                 return (
-                  <button
-                    key={i}
-                    onClick={handleBackspace}
-                    className="h-14 rounded-2xl flex items-center justify-center text-white/70 hover:bg-white/10 active:bg-white/20 transition-colors"
-                  >
-                    <Delete className="w-5 h-5" />
-                  </button>
+                  <div key={i} style={{
+                    width: 14, height: 14, borderRadius: '50%',
+                    background: filled ? 'linear-gradient(135deg, #a5b4fc, #818cf8)' : 'rgba(255,255,255,0.15)',
+                    border: filled ? 'none' : '1.5px solid rgba(255,255,255,0.25)',
+                    boxShadow: filled ? '0 0 12px rgba(165,180,252,0.7)' : 'none',
+                    transition: 'all 0.15s ease',
+                    transform: filled ? 'scale(1.1)' : 'scale(1)',
+                  }} />
                 );
-              }
-              return (
-                <button
-                  key={i}
-                  onClick={() => handleDigit(d)}
-                  className="h-14 rounded-2xl bg-white/10 hover:bg-white/20 active:bg-white/30 text-white font-display font-semibold text-xl transition-all duration-150 active:scale-95"
-                >
-                  {d}
+              })}
+            </div>
+
+            {/* Error message */}
+            {error && (
+              <p style={{ color: '#f87171', fontSize: 12, textAlign: 'center', marginBottom: 12, marginTop: 4 }}>{error}</p>
+            )}
+            {!error && <div style={{ height: 28 }} />}
+
+            {/* PIN pad */}
+            <div style={{
+              width: '100%',
+              background: 'rgba(255,255,255,0.06)',
+              backdropFilter: 'blur(20px)',
+              borderRadius: 28,
+              border: '1px solid rgba(255,255,255,0.1)',
+              padding: '20px 16px',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+            }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+                {digits.map((d, i) => {
+                  if (d === '') return <div key={i} />;
+                  if (d === 'del') {
+                    return (
+                      <button key={i} onClick={handleBackspace}
+                        style={{ height: 60, borderRadius: 16, border: 'none', background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.12s ease' }}
+                        onTouchStart={e => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}
+                        onTouchEnd={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                      >
+                        <Delete style={{ width: 20, height: 20 }} />
+                      </button>
+                    );
+                  }
+                  return (
+                    <button key={i} onClick={() => handleDigit(d)}
+                      style={{
+                        height: 60, borderRadius: 16, border: '1px solid rgba(255,255,255,0.08)',
+                        background: 'rgba(255,255,255,0.08)',
+                        color: '#fff', fontSize: 22, fontWeight: 600,
+                        cursor: 'pointer', transition: 'all 0.12s ease',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                      }}
+                      onTouchStart={e => { e.currentTarget.style.background = 'rgba(99,102,241,0.35)'; e.currentTarget.style.transform = 'scale(0.94)'; }}
+                      onTouchEnd={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.transform = 'scale(1)'; }}
+                    >
+                      {d}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Fingerprint button */}
+              {isBiometricAvailable() && (
+                <button onClick={attemptBiometric}
+                  style={{ width: '100%', marginTop: 12, padding: '12px 0', borderRadius: 14, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
+                  <Fingerprint style={{ width: 18, height: 18 }} />
+                  Use Fingerprint
                 </button>
-              );
-            })}
-          </div>
+              )}
+            </div>
 
-          {isBiometricAvailable() && (
-            <button
-              onClick={attemptBiometric}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-white/20 text-white/70 hover:bg-white/10 transition-colors mb-4"
-            >
-              <Fingerprint className="w-5 h-5" />
-              <span className="text-sm">Use Fingerprint</span>
+            {/* Forgot PIN */}
+            <button onClick={handleForgotPin}
+              style={{ marginTop: 20, background: 'none', border: 'none', color: 'rgba(255,255,255,0.35)', fontSize: 12, cursor: 'pointer' }}>
+              Forgot PIN?
             </button>
-          )}
-
-          <button
-            onClick={handleForgotPin}
-            className="w-full text-center text-xs text-white/40 hover:text-white/60 transition-colors"
-          >
-            Forgot PIN?
-          </button>
-        </div>
-      )}
+          </div>
+        )}
       </div>
     </div>
   );
 }
+
