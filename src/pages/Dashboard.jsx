@@ -330,7 +330,7 @@ export default function Dashboard() {
 
         {/* Expense Categories - Sleek List */}
         <div className="card">
-          <h3 className="section-title">Expense Categories</h3>
+          <h3 className="section-title">Expense Categories 💸</h3>
           <p className="text-xs text-ink-300 dark:text-ink-200 mb-4">This month breakdown</p>
           {data.categories.length > 0 ? (
             <div className="space-y-4">
