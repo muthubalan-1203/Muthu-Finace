@@ -328,33 +328,35 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Expense Categories - Donut Chart */}
+        {/* Expense Categories - Sleek List */}
         <div className="card">
           <h3 className="section-title">Expense Categories</h3>
-          <p className="text-xs text-ink-300 dark:text-ink-200 mb-3">This month breakdown</p>
+          <p className="text-xs text-ink-300 dark:text-ink-200 mb-4">This month breakdown</p>
           {data.categories.length > 0 ? (
-            <div className="flex flex-col sm:flex-row items-center gap-4">
-              <div className="h-48 w-48 flex-shrink-0">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={data.categories} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={3} dataKey="value">
-                      {data.categories.map((_, i) => (
-                        <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip contentStyle={tooltipStyle} formatter={(v) => formatINR(v)} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="flex flex-col gap-1.5 text-xs w-full min-w-0">
-                {data.categories.map((cat, i) => (
-                  <div key={cat.name} className="flex items-center gap-2 min-w-0">
-                    <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                    <span className="text-ink-400 dark:text-ink-200 truncate flex-1">{cat.name}</span>
-                    <span className="currency text-ink dark:text-cream-50 font-medium flex-shrink-0">{formatINR(cat.value)}</span>
+            <div className="space-y-4">
+              {data.categories.map((cat, i) => {
+                const pct = data.totalExpenses > 0 ? Math.round((cat.value / data.totalExpenses) * 100) : 0;
+                return (
+                  <div key={cat.name} className="animate-slide-up" style={{ animationDelay: `${i * 50}ms` }}>
+                    <div className="flex items-center justify-between text-sm mb-1.5">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                        <span className="text-ink-400 dark:text-ink-100 font-medium truncate">{cat.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className="text-[10px] text-ink-300 dark:text-ink-400 font-medium">{pct}%</span>
+                        <span className="currency text-ink dark:text-cream-50 font-bold">{formatINR(cat.value)}</span>
+                      </div>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-cream-200 dark:bg-ink-700 overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{ width: `${pct}%`, backgroundColor: COLORS[i % COLORS.length] }}
+                      />
+                    </div>
                   </div>
-                ))}
-              </div>
+                );
+              })}
             </div>
           ) : (
             <p className="text-sm text-ink-300 dark:text-ink-200 text-center py-8">No expenses this month</p>
