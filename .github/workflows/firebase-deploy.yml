@@ -1,9 +1,12 @@
-name: Deploy OTA to Firebase
+name: Deploy App and Release APK
 
 on:
   push:
     branches:
       - main
+
+permissions:
+  contents: write
 
 jobs:
   build_and_deploy:
@@ -17,6 +20,12 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
       - name: Install Dependencies
         run: npm install
 
@@ -25,7 +34,7 @@ jobs:
           echo "{\"version\": $(date +%s)}" > public/version.json
           cat public/version.json
 
-      - name: Build App
+      - name: Build Web App
         run: npm run build
 
       - name: Zip dist folder for OTA
@@ -40,3 +49,17 @@ jobs:
 
       - name: Deploy to Firebase Hosting
         run: firebase deploy --only hosting --token "${{ secrets.FIREBASE_TOKEN }}" --non-interactive
+
+      - name: Build Android APK
+        run: |
+          npm run android:sync
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Create GitHub Release and Upload APK
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "v${{ github.run_number }}"
+          name: "Update v${{ github.run_number }}"
+          files: android/app/build/outputs/apk/debug/app-debug.apk
