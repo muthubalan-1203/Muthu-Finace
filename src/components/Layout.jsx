@@ -54,7 +54,7 @@ function SidebarNav({ isOpen, onClose }) {
             </div>
             <div className="flex flex-col">
               <span className="font-display font-bold text-lg text-ink dark:text-cream-50 leading-tight">Muthu Finance</span>
-              <span className="text-[10px] font-bold text-brand-600 tracking-wider">NEW UPDATE</span>
+              <span className="text-[10px] font-bold text-brand-600 tracking-wider">AUTO UPDATE LIVE 🚀</span>
             </div>
           </div>
           <button className="lg:hidden text-ink-400 dark:text-ink-300 p-1" onClick={onClose}>
