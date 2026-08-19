@@ -29,6 +29,13 @@ export default function App() {
   useEffect(() => {
     async function checkOTA() {
       if (!Capacitor.isNativePlatform()) return;
+      
+      try {
+        await CapacitorUpdater.notifyAppReady();
+      } catch (err) {
+        console.error('Failed to notify app ready:', err);
+      }
+      
       try {
         const FIREBASE_URL = 'https://muthu-abi-e3b3d.web.app';
         const res = await fetch(`${FIREBASE_URL}/version.json?t=${Date.now()}`);

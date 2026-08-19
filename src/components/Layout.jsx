@@ -44,7 +44,10 @@ function SidebarNav() {
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-brand-800 flex items-center justify-center">
             <span className="text-cream-50 font-mono font-bold text-sm">₹</span>
           </div>
-          <span className="font-display font-bold text-lg text-ink dark:text-cream-50">Muthu</span>
+          <div className="flex flex-col">
+            <span className="font-display font-bold text-lg text-ink dark:text-cream-50 leading-tight">Muthu Finance</span>
+            <span className="text-[10px] font-bold text-brand-600 tracking-wider">NEW UPDATE</span>
+          </div>
         </div>
       </div>
       <nav className="flex-1 overflow-y-auto scrollbar-thin p-3 space-y-0.5">
