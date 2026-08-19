@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom';
+import { useApp } from '../contexts/AppContext';
 import {
   LayoutDashboard,
   Wallet,
@@ -149,12 +150,41 @@ function BottomNav() {
   );
 }
 
+function TopBar() {
+  const { viewFilter, setViewFilter } = useApp();
+
+  return (
+    <header className="sticky top-0 z-20 bg-white/80 dark:bg-ink-800/80 backdrop-blur-md border-b border-ink-50 dark:border-ink-700 px-4 py-3 flex justify-end">
+      <div className="bg-ink-100 dark:bg-ink-900 p-1 rounded-lg flex items-center gap-1">
+        {['Family', 'Muthu', 'Abi'].map((filter) => (
+          <button
+            key={filter}
+            onClick={() => setViewFilter(filter)}
+            className={`px-4 py-1.5 rounded-md text-xs font-medium transition-colors ${
+              viewFilter === filter
+                ? 'bg-brand-600 text-white shadow-sm'
+                : 'text-ink-400 dark:text-ink-300 hover:text-ink dark:hover:text-cream-100'
+            }`}
+          >
+            {filter}
+          </button>
+        ))}
+      </div>
+    </header>
+  );
+}
+
 export default function Layout({ children }) {
   return (
     <div className="min-h-screen bg-cream dark:bg-ink">
       <SidebarNav />
       <BottomNav />
-      <main className="lg:ml-60 min-h-screen">{children}</main>
+      <main className="lg:ml-60 min-h-screen flex flex-col">
+        <TopBar />
+        <div className="flex-1 pb-16 lg:pb-0">
+          {children}
+        </div>
+      </main>
     </div>
   );
 }

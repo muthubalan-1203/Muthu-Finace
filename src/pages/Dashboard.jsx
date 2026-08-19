@@ -237,23 +237,6 @@ export default function Dashboard() {
         </div>
         
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-          {/* Profile Filter Toggle */}
-          <div className="bg-ink-100 dark:bg-ink-800 p-1 rounded-lg flex items-center gap-1">
-            {['Family', 'Muthu', 'Abi'].map((filter) => (
-              <button
-                key={filter}
-                onClick={() => setViewFilter(filter)}
-                className={`px-4 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                  viewFilter === filter
-                    ? 'bg-white dark:bg-ink-600 text-ink dark:text-cream-50 shadow-sm'
-                    : 'text-ink-400 dark:text-ink-300 hover:text-ink dark:hover:text-cream-100'
-                }`}
-              >
-                {filter}
-              </button>
-            ))}
-          </div>
-
           <MonthPicker year={year} month={month} onChange={(y, m) => { setYear(y); setMonth(m); }} />
         </div>
       </div>
