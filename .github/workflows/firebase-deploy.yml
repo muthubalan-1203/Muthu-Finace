@@ -1,0 +1,42 @@
+name: Deploy OTA to Firebase
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Bump Version to GitHub Run Number
+        run: |
+          echo '{"version": '${{ github.run_number }}'}' > public/version.json
+          cat public/version.json
+
+      - name: Build App
+        run: npm run build
+
+      - name: Zip dist folder for OTA
+        run: |
+          cd dist
+          zip -r ../dist.zip .
+          cd ..
+          mv dist.zip dist/dist.zip
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: Deploy to Firebase Hosting
+        run: firebase deploy --only hosting --token "${{ secrets.FIREBASE_TOKEN }}" --non-interactive
