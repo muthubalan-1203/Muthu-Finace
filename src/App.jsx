@@ -22,7 +22,6 @@ import Settings from './pages/Settings';
 import Backup from './pages/Backup';
 
 export default function App() {
-  // null = checking, false = no update, object = bundle ready to install
   const [pendingBundle, setPendingBundle] = useState(null);
   const [isInstalling, setIsInstalling] = useState(false);
 
@@ -46,12 +45,10 @@ export default function App() {
 
         if (remoteData.version > localData.version) {
           console.log(`Update available: ${localData.version} -> ${remoteData.version}`);
-          // Pre-download silently in the background
           const bundle = await CapacitorUpdater.download({
             url: `${FIREBASE_URL}/dist.zip`,
             version: String(remoteData.version),
           });
-          // Show the banner — update is ready to install
           setPendingBundle(bundle);
         }
       } catch (e) {
@@ -77,30 +74,47 @@ export default function App() {
     <AppProvider>
       <LockScreen />
 
-      {/* ── OTA Update Banner ── */}
+      {/* ── PREMIUM OTA UPDATE BANNER ── */}
       {pendingBundle && (
         <div
           style={{
             position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
+            bottom: '24px',
+            left: '50%',
+            transform: 'translateX(-50%)',
             zIndex: 9999,
-            background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
+            width: '90%',
+            maxWidth: '400px',
+            background: 'rgba(30, 41, 59, 0.85)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
             color: '#fff',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '10px 16px',
-            gap: 12,
-            boxShadow: '0 2px 12px rgba(0,0,0,0.25)',
+            padding: '16px 20px',
+            borderRadius: '24px',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
+            animation: 'slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 18 }}>🚀</span>
-            <span style={{ fontSize: 13, fontWeight: 600 }}>
-              {isInstalling ? 'Installing update...' : 'New update available!'}
-            </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ 
+              background: 'linear-gradient(135deg, #6366f1, #a855f7)', 
+              padding: '10px', 
+              borderRadius: '16px' 
+            }}>
+              <span style={{ fontSize: 20 }}>🚀</span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>
+                {isInstalling ? 'Installing...' : 'New Update Ready'}
+              </span>
+              <span style={{ fontSize: 12, color: '#94a3b8', marginTop: '2px' }}>
+                {isInstalling ? 'Please wait a moment' : 'Tap to install features'}
+              </span>
+            </div>
           </div>
           {!isInstalling && (
             <button
@@ -109,19 +123,16 @@ export default function App() {
                 background: '#fff',
                 color: '#4f46e5',
                 border: 'none',
-                borderRadius: 8,
-                padding: '6px 14px',
+                borderRadius: '12px',
+                padding: '8px 16px',
                 fontWeight: 700,
-                fontSize: 12,
+                fontSize: 13,
                 cursor: 'pointer',
-                flexShrink: 0,
+                transition: 'all 0.2s',
               }}
             >
-              Update &amp; Restart
+              Restart
             </button>
-          )}
-          {isInstalling && (
-            <span style={{ fontSize: 13, opacity: 0.85 }}>Restarting...</span>
           )}
         </div>
       )}
