@@ -308,3 +308,118 @@ export function getMonthlyPDFBlob(year, month) {
   const doc = generateMonthlyPDF(year, month);
   return doc.output('blob');
 }
+
+// ==========================================
+// NEW: COMBINED DATE-WISE LEDGER PDF
+// ==========================================
+
+export function generateDateWiseLedgerPDF(year, month) {
+  const doc = new jsPDF('p', 'mm', 'a4');
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const settings = getSettings();
+  const profileName = settings.profileName || '';
+  const monthLabel = formatMonthYear(year, month);
+
+  // 1. Get all Income and Expenses for the month
+  const incomeItems = getItemsForMonth('income', year, month).map(item => ({ ...item, recordType: 'INCOME' }));
+  const expenseItems = getItemsForMonth('expenses', year, month).map(item => ({ ...item, recordType: 'EXPENSE' }));
+  const salary = getSalaryForMonth(year, month);
+
+  if (salary > 0) {
+    incomeItems.push({
+      date: new Date(year, month, 1).toISOString(), 
+      title: 'Monthly Salary',
+      category: 'Salary',
+      amount: salary,
+      recordType: 'INCOME'
+    });
+  }
+
+  // 2. Combine and Sort by Date (Descending - Newest first)
+  const allTransactions = [...incomeItems, ...expenseItems].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  let y = 0;
+
+  function addHeader() {
+    doc.setFillColor(...BRAND_COLOR);
+    doc.rect(0, 0, pageWidth, 32, 'F');
+    doc.setFillColor(...BRAND_LIGHT);
+    doc.rect(0, 30, pageWidth, 3, 'F');
+
+    doc.setTextColor(...WHITE);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(18);
+    doc.text('Muthu Finance', 14, 14);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Date-wise Transaction Ledger', 14, 20);
+    doc.setFontSize(11);
+    doc.text(monthLabel, pageWidth - 14, 14, { align: 'right' });
+    if (profileName) {
+      doc.setFontSize(9);
+      doc.text(`Prepared for ${profileName}`, pageWidth - 14, 20, { align: 'right' });
+    }
+    y = 45;
+  }
+
+  function addFooter(pageNum, totalPages) {
+    const footerY = doc.internal.pageSize.getHeight() - 8;
+    doc.setFontSize(7);
+    doc.setTextColor(150, 150, 150);
+    doc.text(`Generated on ${new Date().toLocaleString('en-IN')}`, 14, footerY);
+    doc.text(`Page ${pageNum} of ${totalPages}`, pageWidth - 14, footerY, { align: 'right' });
+  }
+
+  addHeader();
+
+  // 3. Table Rows Preparation
+  if (allTransactions.length > 0) {
+    const tableRows = allTransactions.map((t) => [
+      formatDate(t.date),
+      t.recordType,
+      t.title || t.source || '-',
+      t.category || '-',
+      formatINR(Number(t.amount))
+    ]);
+
+    // 4. Generate PDF Table
+    doc.autoTable({
+      startY: y,
+      head: [['Date', 'Type', 'Description', 'Category', 'Amount']],
+      body: tableRows,
+      theme: 'grid',
+      headStyles: { fillColor: BRAND_COLOR, textColor: WHITE, fontStyle: 'bold', fontSize: 9 },
+      bodyStyles: { fontSize: 8, textColor: DARK_TEXT },
+      alternateRowStyles: { fillColor: LIGHT_GRAY },
+      margin: { left: 14, right: 14 },
+      didParseCell: function (data) {
+        // Color coding: Green for Income, Red for Expense
+        if (data.section === 'body' && data.column.index === 1) {
+          if (data.cell.raw === 'INCOME') data.cell.styles.textColor = [5, 150, 105]; // Green
+          if (data.cell.raw === 'EXPENSE') data.cell.styles.textColor = [220, 38, 38]; // Red
+        }
+      },
+    });
+    
+    // Add footers to all pages for Ledger
+    const totalPages = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      addFooter(i, totalPages);
+    }
+    
+  } else {
+    doc.setFontSize(10);
+    doc.setTextColor(120, 120, 120);
+    doc.text('No transactions found for this month.', 14, y);
+  }
+
+  return doc;
+}
+
+export async function downloadDateWisePDF(year, month) {
+  const doc = generateDateWiseLedgerPDF(year, month);
+  const monthLabel = formatMonthYear(year, month).replace(/\s+/g, '_');
+  const blob = doc.output('blob');
+  await shareFile(`Datewise Ledger ${monthLabel}`, blob, `Datewise_Ledger_${monthLabel}.pdf`, 'application/pdf');
+}
