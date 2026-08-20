@@ -4,22 +4,22 @@ import { v4 as uuidv4 } from 'uuid';
 /**
  * Auto SMS Parser
  *
- * Flow:
- * 1. Bank SMS check
- * 2. Failed / declined transaction skip
- * 3. Transaction amount detect
- * 4. Credit / Debit detect
- * 5. Bank name detect
- * 6. Person / Merchant / UPI name detect
- * 7. Save to Income or Expenses
+ * Supports:
+ * - Bank transactions
+ * - UPI payments
+ * - ATM withdrawals
+ * - Credit / Income
+ * - Debit / Expenses
+ * - Person / Merchant names
+ * - Failed / declined transaction filtering
  */
 
 export async function parseSmsList(messages) {
   let count = 0;
 
-  // Supported banks
   const knownBanks = [
     { key: 'indian bank', name: 'Indian Bank' },
+    { key: 'indianbank', name: 'Indian Bank' },
     { key: 'sbi', name: 'SBI' },
     { key: 'state bank of india', name: 'SBI' },
     { key: 'hdfc', name: 'HDFC Bank' },
@@ -44,6 +44,7 @@ export async function parseSmsList(messages) {
   for (const msg of messages) {
     const originalBody = msg?.body || '';
     const body = originalBody.toLowerCase();
+
     const sender = String(
       msg?.address ||
       msg?.sender ||
@@ -53,9 +54,9 @@ export async function parseSmsList(messages) {
 
     if (!body.trim()) continue;
 
-    // ---------------------------------------------------------
-    // 1. CHECK BANK SMS
-    // ---------------------------------------------------------
+    // =========================================================
+    // 1. BANK DETECTION
+    // =========================================================
 
     const bodyNoSpace = body.replace(/\s+/g, '');
 
@@ -64,9 +65,8 @@ export async function parseSmsList(messages) {
       sender.includes(bank.key.replace(/\s+/g, ''))
     );
 
-    // Also allow common UPI/bank transaction SMS
     const looksLikeBankTransaction =
-      /(upi|a\/c|acct|account|transaction|txn|debited|credited|withdrawn|withdraw|debit|credit|paid|received|sent|spent|payment)/i.test(
+      /(upi|a\/c|acct|account|transaction|txn|debited|credited|withdrawn|withdraw|w\/d|debit|credit|paid|received|sent|spent|payment)/i.test(
         body
       );
 
@@ -76,9 +76,9 @@ export async function parseSmsList(messages) {
 
     const bankName = detectedBank?.name || 'Bank';
 
-    // ---------------------------------------------------------
+    // =========================================================
     // 2. SKIP FAILED / DECLINED TRANSACTIONS
-    // ---------------------------------------------------------
+    // =========================================================
 
     if (
       /(declined|failed|unsuccessful|reversed|revoked|not processed|transaction failed|payment failed)/i.test(
@@ -88,20 +88,35 @@ export async function parseSmsList(messages) {
       continue;
     }
 
-    // ---------------------------------------------------------
-    // 3. EXTRACT TRANSACTION AMOUNT
-    // ---------------------------------------------------------
+    // =========================================================
+    // 3. DETECT ATM WITHDRAWAL
+    // =========================================================
+
+    const isAtmWithdrawal =
+      /\b(?:w\/d|withdraw|withdrawn|cash withdrawal|cash withdrawn)\b/i.test(body) ||
+      /\batm\s*:/i.test(body) ||
+      /\batm\b/i.test(body);
+
+    // =========================================================
+    // 4. EXTRACT AMOUNT
+    // =========================================================
 
     let amount = null;
 
-    // Most reliable transaction amount patterns first
     const amountPatterns = [
-      /(?:debited|credited|paid|received|sent|spent|transferred|deposit(?:ed)?|withdrawn)[^\d₹]{0,30}(?:rs\.?|inr|₹)\s*([\d,]+(?:\.\d+)?)/i,
+      // Example:
+      // Rs.10000.00 w/d
+      /(?:rs\.?|inr|₹)\s*([\d,]+(?:\.\d+)?)\s*(?:w\/d|withdraw|withdrawn|debited|credited|paid|sent|spent)?/i,
 
-      /(?:rs\.?|inr|₹)\s*([\d,]+(?:\.\d+)?)\s*(?:has been|was|is)?\s*(?:debited|credited|paid|received|sent|transferred)/i,
+      // Example:
+      // debited Rs.40
+      /(?:debited|credited|paid|received|sent|spent|transferred|withdrawn)[^\d₹]{0,30}(?:rs\.?|inr|₹)\s*([\d,]+(?:\.\d+)?)/i,
 
-      /(?:amount|amt)\s*(?:of|is|:)?\s*(?:rs\.?|inr|₹)?\s*([\d,]+(?:\.\d+)?)/i,
+      // Example:
+      // for Rs 40
+      /(?:for|amount|amt)\s*(?:of|is|:)?\s*(?:rs\.?|inr|₹)?\s*([\d,]+(?:\.\d+)?)/i,
 
+      // General
       /(?:rs\.?|inr|₹)\s*([\d,]+(?:\.\d+)?)/i
     ];
 
@@ -109,7 +124,9 @@ export async function parseSmsList(messages) {
       const match = body.match(pattern);
 
       if (match && match[1]) {
-        const parsed = parseFloat(match[1].replace(/,/g, ''));
+        const parsed = parseFloat(
+          match[1].replace(/,/g, '')
+        );
 
         if (Number.isFinite(parsed) && parsed > 0) {
           amount = parsed;
@@ -120,42 +137,23 @@ export async function parseSmsList(messages) {
 
     if (!amount) continue;
 
-    // ---------------------------------------------------------
-    // 4. DETECT CREDIT / DEBIT
-    // ---------------------------------------------------------
+    // =========================================================
+    // 5. CREDIT / DEBIT DETECTION
+    // =========================================================
 
-    const creditPatterns = [
-      /credited/i,
-      /credit/i,
-      /received/i,
-      /deposited/i,
-      /deposit/i,
-      /received from/i,
-      /money received/i
-    ];
+    const isCredit =
+      /(credited|credit|received|deposited|deposit|money received)/i.test(
+        body
+      );
 
-    const debitPatterns = [
-      /debited/i,
-      /debit/i,
-      /spent/i,
-      /paid/i,
-      /deducted/i,
-      /sent/i,
-      /transferred/i,
-      /withdraw/i,
-      /withdrawn/i,
-      /payment made/i
-    ];
+    const isDebit =
+      /(debited|debit|spent|paid|deducted|sent|transferred|withdraw|withdrawn|w\/d|payment made)/i.test(
+        body
+      );
 
-    const isCredit = creditPatterns.some(pattern =>
-      pattern.test(body)
-    );
-
-    const isDebit = debitPatterns.some(pattern =>
-      pattern.test(body)
-    );
-
-    if (!isCredit && !isDebit) continue;
+    if (!isCredit && !isDebit) {
+      continue;
+    }
 
     let type;
 
@@ -164,14 +162,12 @@ export async function parseSmsList(messages) {
     } else if (isDebit && !isCredit) {
       type = 'expenses';
     } else {
-      // Both words exist.
-      // Use the first transaction keyword in the SMS.
       const creditMatch = body.match(
         /(credited|credit|received|deposited|deposit)/
       );
 
       const debitMatch = body.match(
-        /(debited|debit|spent|paid|deducted|sent|transferred|withdrawn|withdraw)/
+        /(debited|debit|spent|paid|deducted|sent|transferred|withdrawn|withdraw|w\/d)/
       );
 
       const creditIndex = creditMatch
@@ -188,9 +184,41 @@ export async function parseSmsList(messages) {
           : 'expenses';
     }
 
-    // ---------------------------------------------------------
-    // 5. EXTRACT PERSON / MERCHANT / UPI NAME
-    // ---------------------------------------------------------
+    // =========================================================
+    // 6. ATM TRANSACTION
+    // =========================================================
+
+    if (isAtmWithdrawal && type === 'expenses') {
+      const atmLocation = extractAtmLocation(body);
+
+      const item = {
+        id: uuidv4(),
+
+        title: 'ATM Withdrawal',
+
+        amount,
+
+        date: getTransactionDate(msg),
+
+        category: 'Auto SMS',
+
+        paymentMethod: 'Cash',
+
+        note: atmLocation
+          ? `Auto SMS • ${bankName} • ${atmLocation}`
+          : `Auto SMS • ${bankName} • ATM`
+      };
+
+      addItem('expenses', item);
+
+      count++;
+
+      continue;
+    }
+
+    // =========================================================
+    // 7. PERSON / MERCHANT NAME
+    // =========================================================
 
     let extractedName = '';
 
@@ -210,22 +238,22 @@ export async function parseSmsList(messages) {
             /(?:upi|vpa)\s*(?:from|by|:|-)?\s*([a-z0-9][a-z0-9._@-]{2,50})/i
           ]
         : [
-            // paid to Rahul
+            // paid to / sent to / transferred to
             /(?:paid|sent|transferred|debited)\s+(?:to|for)\s+([a-z0-9][a-z0-9\s._@&'/-]{1,50}?)(?=\s+(?:on|at|via|ref|rrn|utr|txn|transaction|a\/c|acct|account|avbl|avail|bal|balance)\b|[.,;]|$)/i,
 
             // to Rahul
             /\bto\s+([a-z0-9][a-z0-9\s._@&'/-]{1,50}?)(?=\s+(?:on|at|via|ref|rrn|utr|txn|transaction|a\/c|acct|account|avbl|avail|bal|balance|from)\b|[.,;]|$)/i,
 
-            // merchant at Amazon
+            // at Amazon
             /\bat\s+([a-z0-9][a-z0-9\s._@&'/-]{1,50}?)(?=\s+(?:on|via|ref|rrn|utr|txn|transaction|a\/c|acct|account|avbl|avail|bal|balance)\b|[.,;]|$)/i,
 
-            // towards Flipkart
+            // towards Murugan
             /\btowards\s+([a-z0-9][a-z0-9\s._@&'/-]{1,50}?)(?=\s+(?:on|via|ref|rrn|utr|txn|transaction|a\/c|acct|account|avbl|avail|bal|balance)\b|[.,;]|$)/i,
 
-            // UPI merchant / VPA
+            // UPI merchant
             /(?:upi|vpa)\s*(?:to|at|for|:|-)?\s*([a-z0-9][a-z0-9._@-]{2,50})/i,
 
-            // merchant info
+            // Merchant / payee
             /(?:merchant|payee)\s*(?:name)?\s*[:\-]?\s*([a-z0-9][a-z0-9\s._@&'/-]{1,50}?)(?=\s+(?:on|via|ref|rrn|utr|txn|transaction)\b|[.,;]|$)/i
           ];
 
@@ -235,7 +263,6 @@ export async function parseSmsList(messages) {
       if (match && match[1]) {
         let candidate = match[1].trim();
 
-        // Remove unwanted ending
         candidate = candidate.replace(
           /\s+(?:on|at|for|via|ref|rrn|utr|txn|transaction|a\/c|acct|account|avbl|avail|bal|balance|from)\b.*$/i,
           ''
@@ -252,9 +279,9 @@ export async function parseSmsList(messages) {
       }
     }
 
-    // ---------------------------------------------------------
-    // 6. FALLBACK: EXTRACT UPI ID
-    // ---------------------------------------------------------
+    // =========================================================
+    // 8. UPI ID FALLBACK
+    // =========================================================
 
     if (!extractedName) {
       const upiMatch = body.match(
@@ -266,9 +293,9 @@ export async function parseSmsList(messages) {
       }
     }
 
-    // ---------------------------------------------------------
-    // 7. FALLBACK TITLE
-    // ---------------------------------------------------------
+    // =========================================================
+    // 9. DEFAULT NAME
+    // =========================================================
 
     if (!extractedName) {
       extractedName =
@@ -277,28 +304,27 @@ export async function parseSmsList(messages) {
           : 'Auto Income';
     }
 
-    // ---------------------------------------------------------
-    // 8. DATE
-    // ---------------------------------------------------------
+    // =========================================================
+    // 10. DATE
+    // =========================================================
 
-    const dateObj = new Date(msg?.date || Date.now());
+    const dateStr = getTransactionDate(msg);
 
-    let dateStr;
+    // =========================================================
+    // 11. PAYMENT METHOD
+    // =========================================================
 
-    if (Number.isNaN(dateObj.getTime())) {
-      dateStr = new Date().toISOString().split('T')[0];
-    } else {
-      dateStr = dateObj.toISOString().split('T')[0];
-    }
+    const paymentMethod = isAtmWithdrawal
+      ? 'Cash'
+      : 'UPI';
 
-    // ---------------------------------------------------------
-    // 9. CREATE TRANSACTION
-    // ---------------------------------------------------------
+    // =========================================================
+    // 12. CREATE NORMAL TRANSACTION
+    // =========================================================
 
     let item;
 
     if (type === 'expenses') {
-      // Expenses.jsx expects `title`
       item = {
         id: uuidv4(),
 
@@ -310,12 +336,11 @@ export async function parseSmsList(messages) {
 
         category: 'Auto SMS',
 
-        paymentMethod: 'UPI',
+        paymentMethod,
 
         note: `Auto SMS • ${bankName}`
       };
     } else {
-      // Income.jsx expects `source`
       item = {
         id: uuidv4(),
 
@@ -331,9 +356,9 @@ export async function parseSmsList(messages) {
       };
     }
 
-    // ---------------------------------------------------------
-    // 10. SAVE
-    // ---------------------------------------------------------
+    // =========================================================
+    // 13. SAVE
+    // =========================================================
 
     addItem(type, item);
 
@@ -344,9 +369,67 @@ export async function parseSmsList(messages) {
 }
 
 
-// ============================================================
-// HELPERS
-// ============================================================
+// =============================================================
+// ATM LOCATION
+// =============================================================
+
+function extractAtmLocation(body) {
+  // Example:
+  // ATM:CUB01777 , ALANGANALLUR II
+
+  const atmMatch = body.match(
+    /atm\s*:\s*([a-z0-9]+)\s*,?\s*([^.\n]+?)(?=\s+on\s+|\s+rrn\s*:|$)/i
+  );
+
+  if (atmMatch) {
+    const code = atmMatch[1]
+      ? atmMatch[1].trim()
+      : '';
+
+    const location = atmMatch[2]
+      ? atmMatch[2].trim()
+      : '';
+
+    if (location) {
+      return `${formatName(location)} (${code.toUpperCase()})`;
+    }
+
+    if (code) {
+      return `ATM ${code.toUpperCase()}`;
+    }
+  }
+
+  // Fallback: "at ATM:..."
+  const simpleAtm = body.match(
+    /\bat\s+atm\s*:?\s*([^.\n]+)/i
+  );
+
+  if (simpleAtm && simpleAtm[1]) {
+    return formatName(simpleAtm[1].trim());
+  }
+
+  return '';
+}
+
+
+// =============================================================
+// DATE
+// =============================================================
+
+function getTransactionDate(msg) {
+  const dateObj = new Date(msg?.date || Date.now());
+
+  if (Number.isNaN(dateObj.getTime())) {
+    return new Date().toISOString().split('T')[0];
+  }
+
+  return dateObj.toISOString().split('T')[0];
+}
+
+
+// =============================================================
+// NAME VALIDATION
+// =============================================================
 
 function isValidName(value) {
   if (!value) return false;
@@ -395,6 +478,10 @@ function isValidName(value) {
   return true;
 }
 
+
+// =============================================================
+// FORMAT NAME
+// =============================================================
 
 function formatName(value) {
   return value
