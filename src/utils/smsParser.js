@@ -6,16 +6,31 @@ export async function parseSmsList(messages) {
 
   for (const msg of messages) {
     const body = msg.body ? msg.body.toLowerCase() : '';
-    
-    // Regex for amount: Rs., INR, ₹ followed by amount
+
+    // Step 1: Only process SMS from known banks (skip promo/e-commerce SMS with similar words)
+    const knownBanks = [
+      'indian bank', 'sbi', 'state bank', 'hdfc', 'icici', 'axis bank',
+      'kotak', 'pnb', 'punjab national', 'bank of baroda', 'canara bank',
+      'union bank', 'idbi', 'yes bank', 'indusind', 'federal bank',
+      'boi', 'bank of india', 'central bank', 'iob', 'indian overseas'
+    ];
+    // Remove spaces from body so "Indian Bank", "IndianBank", "Bank Of Baroda", "BankofBaroda" etc all match
+    const bodyNoSpace = body.replace(/\s+/g, '');
+    const isBankSms = knownBanks.some(bank => bodyNoSpace.includes(bank.replace(/\s+/g, '')));
+    if (!isBankSms) continue;
+
+    // Step 1b: Skip declined/failed transaction SMS (not a real transaction)
+    if (/(declined|failed|unsuccessful|reversed|not processed)/.test(body)) continue;
+
+    // Step 2: Regex for amount: Rs., INR, ₹ followed by amount
     const amountMatch = body.match(/(?:rs\.?|inr|₹)\s*([\d,]+\.?\d*)/);
     if (!amountMatch) continue;
     
     const amountStr = amountMatch[1].replace(/,/g, '');
     const amount = parseFloat(amountStr);
     
-    // Check debit/credit indicators
-    const isDebit = /(debited|spent|paid|deducted)/.test(body);
+    // Step 3: Check debit/credit indicators (w/d and withdrawn cover ATM withdrawals)
+    const isDebit = /(debited|spent|paid|deducted|sent|w\/d|withdraw)/.test(body);
     const isCredit = /(credited|received|deposited)/.test(body);
     
     if (!isDebit && !isCredit) continue;
@@ -24,7 +39,7 @@ export async function parseSmsList(messages) {
     let name = isDebit ? 'Auto Expense' : 'Auto Income';
     
     // Try to extract merchant/recipient
-    const toMatch = body.match(/(?:to|at|vpa|info)(?:\:|-)?\s+([a-z0-9\s*.\-]+?)(?:\s+(?:on|ref|val|avbl|avl|bal|from|date)|$)/);
+    const toMatch = body.match(/(?:to|at|vpa|info)(?:\:|-)?\s+([a-z0-9\s*.\-]+?)(?:\s*[\.\s](?:on|ref|rrn|val|avbl|avl|bal|from|date)|$)/);
     if (toMatch && toMatch[1]) {
       let rawName = toMatch[1].trim();
       if (rawName.length > 20) rawName = rawName.substring(0, 20);
