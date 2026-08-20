@@ -20,12 +20,16 @@ import Reports from './pages/Reports';
 import Calendar from './pages/Calendar';
 import Settings from './pages/Settings';
 import Backup from './pages/Backup';
+import { requestNotificationPermission } from './utils/notifications';
 
 export default function App() {
   const [pendingBundle, setPendingBundle] = useState(null);
   const [isInstalling, setIsInstalling] = useState(false);
 
   useEffect(() => {
+    // Request local notification permissions on app startup
+    requestNotificationPermission();
+
     async function checkOTA() {
       if (!Capacitor.isNativePlatform()) return;
       
