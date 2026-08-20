@@ -3,10 +3,11 @@ import { getSettings, saveSettings } from '../utils/storage';
 import { createPinHash, isPinValid, isLockEnabled, createAnswerHash } from '../utils/security';
 import { useApp } from '../contexts/AppContext';
 import Modal from '../components/ui/Modal';
-import { Settings as SettingsIcon, User, Palette, Shield, Lock, Info, Sun, Moon, Monitor, MessageSquare, Image as ImageIcon, Trash2, CalendarDays } from 'lucide-react';
+import { Settings as SettingsIcon, User, Palette, Shield, Lock, Info, Sun, Moon, Monitor, MessageSquare, Image as ImageIcon, Trash2, CalendarDays, CheckCircle2 } from 'lucide-react';
 
 export default function Settings() {
-  const { theme, setTheme, profileName, setProfileName, addToast, deviceProfile, setDeviceProfile: setAppDeviceProfile, setViewFilter } = useApp();
+  // Destructured colorTheme and setColorTheme from useApp context
+  const { theme, setTheme, colorTheme, setColorTheme, profileName, setProfileName, addToast, deviceProfile, setDeviceProfile: setAppDeviceProfile, setViewFilter } = useApp();
   const [name, setName] = useState(profileName);
   const [showPinSetup, setShowPinSetup] = useState(false);
   const [lockEnabled, setLockEnabled] = useState(false);
@@ -154,6 +155,15 @@ export default function Settings() {
     { id: 'system', label: 'System', icon: Monitor },
   ];
 
+  // Defined 5 Custom Color Themes
+  const colorOptions = [
+    { id: 'default', label: 'Default', colorCode: '#4f46e5' },
+    { id: 'ocean', label: 'Ocean', colorCode: '#0ea5e9' },
+    { id: 'forest', label: 'Forest', colorCode: '#10b981' },
+    { id: 'sunset', label: 'Sunset', colorCode: '#f43f5e' },
+    { id: 'midnight', label: 'Midnight', colorCode: '#8b5cf6' }
+  ];
+
   return (
     <div className="page-container">
       <div className="mb-6">
@@ -188,7 +198,7 @@ export default function Settings() {
                   setLocalDeviceProfile(p);
                   saveSettings({ deviceProfile: p });
                   setAppDeviceProfile(p);
-                  setViewFilter(p); // Auto-switch view to your own profile
+                  setViewFilter(p); 
                   addToast(`Device owner set to ${p}`);
                 }}
                 className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
@@ -230,12 +240,14 @@ export default function Settings() {
         </div>
       </div>
 
-      {/* Theme */}
+      {/* Theme Section - Updated with Color Themes */}
       <div className="card mb-4">
-        <h2 className="flex items-center gap-2 section-title">
-          <Palette className="w-4 h-4 text-brand-500" /> Theme
+        <h2 className="flex items-center gap-2 section-title mb-4">
+          <Palette className="w-4 h-4 text-brand-500" /> App Theme
         </h2>
-        <div className="flex gap-2">
+        
+        {/* Light/Dark Toggle */}
+        <div className="flex gap-2 mb-6">
           {themes.map((t) => (
             <button
               key={t.id}
@@ -250,6 +262,33 @@ export default function Settings() {
               {t.label}
             </button>
           ))}
+        </div>
+
+        {/* Color Theme Selector */}
+        <div className="pt-4 border-t border-ink-100 dark:border-ink-700">
+          <h3 className="text-sm font-semibold text-ink-600 dark:text-cream-50 mb-3">Accent Color</h3>
+          <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin">
+            {colorOptions.map((colorObj) => (
+              <button
+                key={colorObj.id}
+                onClick={() => {
+                  setColorTheme(colorObj.id);
+                  addToast(`${colorObj.label} theme applied!`);
+                }}
+                className="flex flex-col items-center gap-2 min-w-[60px]"
+              >
+                <div 
+                  className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${colorTheme === colorObj.id ? 'ring-4 ring-offset-2 ring-brand-400 dark:ring-offset-ink-800 scale-110' : 'hover:scale-105 shadow-sm'}`}
+                  style={{ backgroundColor: colorObj.colorCode }}
+                >
+                  {colorTheme === colorObj.id && <CheckCircle2 className="w-6 h-6 text-white" />}
+                </div>
+                <span className={`text-xs font-medium ${colorTheme === colorObj.id ? 'text-brand-600 dark:text-brand-400' : 'text-ink-400 dark:text-ink-300'}`}>
+                  {colorObj.label}
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -386,9 +425,6 @@ export default function Settings() {
             <span className="text-ink-300 dark:text-ink-200">Data Storage</span>
             <span className="font-medium text-ink dark:text-cream-50">Cloud Sync (Online)</span>
           </div>
-          <p className="text-xs text-ink-300 dark:text-ink-200 pt-2">
-            Muthu is a real-time synced personal finance app. Your data is synced securely across family devices.
-          </p>
         </div>
       </div>
 
@@ -423,6 +459,8 @@ export default function Settings() {
           </div>
         </div>
       </Modal>
+
+      {/* Recovery Modal */}
       <Modal
         isOpen={showRecoverySetup}
         onClose={() => setShowRecoverySetup(false)}
