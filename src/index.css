@@ -10,17 +10,18 @@
   }
 
   html {
-    @apply scroll-smooth;
+    @apply scroll-smooth bg-ink;
   }
 
   body {
-    @apply font-body text-ink bg-cream antialiased;
+    @apply font-body text-ink bg-cream antialiased transition-colors duration-300;
     font-feature-settings: 'cv11', 'ss01';
   }
 
   .dark body,
   body.dark {
-    @apply bg-ink text-cream-50;
+    background: radial-gradient(circle at top left, #1a1a2e 0%, #0f172a 100%);
+    @apply text-cream-50 min-h-screen;
   }
 
   * {
@@ -30,15 +31,15 @@
 
 @layer components {
   .currency {
-    @apply font-mono tabular-nums tracking-tight;
+    @apply font-mono tabular-nums tracking-tight font-semibold;
   }
 
   .card {
-    @apply bg-white dark:bg-ink-700 rounded-2xl shadow-card dark:shadow-card-dark p-4 sm:p-5 transition-shadow duration-200;
+    @apply bg-white/80 dark:bg-slate-800/40 backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.3)] p-4 sm:p-5 transition-all duration-300;
   }
 
   .card:hover {
-    @apply shadow-card-hover;
+    @apply transform -translate-y-1 shadow-[0_12px_40px_rgb(0,0,0,0.12)] dark:shadow-[0_12px_40px_rgb(0,0,0,0.4)];
   }
 
   .page-container {
@@ -46,11 +47,11 @@
   }
 
   .page-title {
-    @apply font-display text-2xl sm:text-3xl font-bold text-ink dark:text-cream-50 mb-1;
+    @apply font-display text-2xl sm:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-ink to-ink-400 dark:from-white dark:to-slate-400 mb-1;
   }
 
   .page-subtitle {
-    @apply text-sm text-ink-300 dark:text-ink-200 mb-6;
+    @apply text-sm text-ink-300 dark:text-slate-400 mb-6 font-medium uppercase tracking-wide;
   }
 
   .section-title {
@@ -58,39 +59,39 @@
   }
 
   .input-base {
-    @apply w-full px-3 py-2.5 rounded-xl border border-ink-50 dark:border-ink-600 bg-cream-50 dark:bg-ink-800 text-ink dark:text-cream-50 placeholder-ink-200 dark:placeholder-ink-300 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all duration-200 text-sm;
+    @apply w-full px-4 py-3.5 rounded-2xl border border-ink-100 dark:border-white/10 bg-white/50 dark:bg-black/20 backdrop-blur-md text-ink dark:text-white placeholder-ink-300 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all duration-300 text-sm;
   }
 
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white font-medium text-sm transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-2xl bg-gradient-to-r from-brand-600 to-brand-400 hover:from-brand-500 hover:to-brand-300 text-white font-bold text-sm transition-all duration-300 shadow-[0_4px_20px_rgba(79,70,229,0.4)] hover:shadow-[0_6px_25px_rgba(79,70,229,0.6)] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-ink-50 dark:border-ink-600 bg-white dark:bg-ink-700 hover:bg-cream-100 dark:hover:bg-ink-600 text-ink dark:text-cream-50 font-medium text-sm transition-all duration-200;
+    @apply inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-2xl border border-ink-100 dark:border-white/10 bg-white/50 dark:bg-slate-800/50 backdrop-blur-md hover:bg-cream-100 dark:hover:bg-slate-700/50 text-ink dark:text-white font-semibold text-sm transition-all duration-300 active:scale-95;
   }
 
   .btn-danger {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-medium text-sm transition-all duration-200;
+    @apply inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-2xl bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-medium text-sm transition-all duration-300;
   }
 
   .badge {
-    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+    @apply inline-flex items-center px-3 py-1 rounded-xl text-xs font-bold tracking-wide;
   }
 
   .badge-green {
-    @apply bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400;
+    @apply bg-emerald-100/80 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300;
   }
 
   .badge-amber {
-    @apply bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400;
+    @apply bg-amber-100/80 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300;
   }
 
   .badge-red {
-    @apply bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400;
+    @apply bg-rose-100/80 text-rose-700 dark:bg-rose-500/20 dark:text-rose-300;
   }
 
   .badge-blue {
-    @apply bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400;
+    @apply bg-blue-100/80 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300;
   }
 
   .badge-gray {
