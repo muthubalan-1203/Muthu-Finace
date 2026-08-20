@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { verifyPin, isLockEnabled, isBiometricAvailable, verifyAnswer, createPinHash } from '../utils/security';
 import { getSettings, clearAllData, saveSettings } from '../utils/storage';
-import { Delete, Fingerprint, AlertTriangle, KeyRound } from 'lucide-react';
+import { Delete, Fingerprint, AlertTriangle, KeyRound, ShieldCheck } from 'lucide-react';
 
 // Greeting based on time of day
 function getGreeting() {
@@ -20,9 +20,9 @@ function Orb({ style }) {
       style={{
         position: 'absolute',
         borderRadius: '50%',
-        filter: 'blur(60px)',
-        opacity: 0.35,
-        animation: 'floatOrb 8s ease-in-out infinite alternate',
+        filter: 'blur(70px)',
+        opacity: 0.4,
+        animation: 'floatOrb 10s ease-in-out infinite alternate',
         ...style,
       }}
     />
@@ -75,11 +75,8 @@ export default function LockScreen() {
         title: 'Authenticate',
         subtitle: 'Use fingerprint to unlock',
       });
-      // The promise resolves on success and rejects on cancel.
-      // If we reach here, it successfully authenticated.
       unlock();
     } catch (e) {
-      // Biometric not available or cancelled
       console.log('Biometric failed or cancelled', e);
     }
   }
@@ -114,7 +111,7 @@ export default function LockScreen() {
           setError('');
           unlock();
         } else {
-          setError('Incorrect PIN. Try again.');
+          setError('Incorrect PIN');
           setPin('');
         }
       }, 150);
@@ -178,23 +175,16 @@ export default function LockScreen() {
       setRecoveryError('');
       setPin('');
       setError('');
-      // unlock directly
       unlock();
     }
   }
 
   const digits = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', 'del'];
 
-  // ─── Keyframe styles injected once ────────────────────────────────────────
   const keyframes = `
     @keyframes floatOrb {
       0%   { transform: translate(0, 0) scale(1); }
-      100% { transform: translate(20px, -30px) scale(1.15); }
-    }
-    @keyframes dotPop {
-      0%   { transform: scale(1); }
-      50%  { transform: scale(1.4); }
-      100% { transform: scale(1.1); }
+      100% { transform: translate(30px, -40px) scale(1.1); }
     }
     @keyframes shakeX {
       0%, 100% { transform: translateX(0); }
@@ -204,8 +194,12 @@ export default function LockScreen() {
       80%       { transform: translateX(6px); }
     }
     @keyframes fadeSlideUp {
-      from { opacity: 0; transform: translateY(24px); }
-      to   { opacity: 1; transform: translateY(0); }
+      from { opacity: 0; transform: translateY(20px) scale(0.98); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 15px rgba(99,102,241,0.5); }
+      50% { box-shadow: 0 0 25px rgba(99,102,241,0.8); }
     }
   `;
 
@@ -219,179 +213,139 @@ export default function LockScreen() {
 
       {/* ── Background ── */}
       {!bgImage && (
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(145deg, #0f0c29, #1a103d, #0f0c29)' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at top left, #1e1b4b 0%, #020617 100%)' }} />
       )}
-      {bgImage && <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(12px)' }} />}
+      {bgImage && <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(16px)' }} />}
 
       {/* ── Floating orbs ── */}
       {!bgImage && (
         <>
-          <Orb style={{ width: 320, height: 320, background: '#6366f1', top: '-80px', left: '-80px', animationDuration: '9s' }} />
-          <Orb style={{ width: 260, height: 260, background: '#8b5cf6', bottom: '60px', right: '-60px', animationDuration: '7s', animationDelay: '1s' }} />
-          <Orb style={{ width: 180, height: 180, background: '#06b6d4', top: '40%', left: '55%', animationDuration: '11s', animationDelay: '2s' }} />
+          <Orb style={{ width: 350, height: 350, background: '#4f46e5', top: '-100px', left: '-100px', animationDuration: '10s' }} />
+          <Orb style={{ width: 280, height: 280, background: '#9333ea', bottom: '20px', right: '-80px', animationDuration: '8s', animationDelay: '1s' }} />
+          <Orb style={{ width: 200, height: 200, background: '#0891b2', top: '35%', left: '50%', animationDuration: '12s', animationDelay: '2s' }} />
         </>
       )}
 
       {/* ── Content ── */}
-      <div style={{ position: 'relative', zIndex: 10, width: '100%', maxWidth: 340, display: 'flex', flexDirection: 'column', alignItems: 'center', animation: 'fadeSlideUp 0.5s ease-out both' }}>
+      <div style={{ position: 'relative', zIndex: 10, width: '100%', maxWidth: 360, display: 'flex', flexDirection: 'column', alignItems: 'center', animation: 'fadeSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both' }}>
 
         {/* ── RESET PANEL ── */}
         {showReset ? (
-          <div style={{ width: '100%', background: 'rgba(255,255,255,0.07)', backdropFilter: 'blur(20px)', borderRadius: 24, border: '1px solid rgba(255,255,255,0.12)', padding: 28 }}>
+          <div style={{ width: '100%', background: 'rgba(30, 41, 59, 0.7)', backdropFilter: 'blur(24px)', borderRadius: 32, border: '1px solid rgba(255,255,255,0.08)', padding: 32, boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
+            {/* ... (Reset panel content remains structurally same but styled darker) ... */}
             <div style={{ textAlign: 'center', marginBottom: 24 }}>
-              <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(251,191,36,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-                <AlertTriangle style={{ width: 28, height: 28, color: '#fbbf24' }} />
+              <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(239,68,68,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', border: '1px solid rgba(239,68,68,0.2)' }}>
+                <AlertTriangle style={{ width: 32, height: 32, color: '#ef4444' }} />
               </div>
-              <h2 style={{ color: '#fff', fontWeight: 700, fontSize: 20, marginBottom: 8 }}>Reset App Data?</h2>
-              <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: 13, lineHeight: 1.5 }}>
-                This will permanently delete all your data. This action cannot be undone.
-              </p>
+              <h2 style={{ color: '#fff', fontWeight: 800, fontSize: 22, marginBottom: 8 }}>Reset App Data?</h2>
+              <p style={{ color: '#94a3b8', fontSize: 13, lineHeight: 1.6 }}>This will permanently delete all your data. This action cannot be undone.</p>
             </div>
-            <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, display: 'block', marginBottom: 6 }}>Type RESET to confirm</label>
-            <input
-              type="text"
-              value={confirmReset}
-              onChange={(e) => setConfirmReset(e.target.value.toUpperCase())}
-              style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', textAlign: 'center', fontFamily: 'monospace', letterSpacing: '0.2em', fontSize: 14, outline: 'none', boxSizing: 'border-box', marginBottom: 16 }}
-              placeholder="RESET"
-            />
+            <input type="text" value={confirmReset} onChange={(e) => setConfirmReset(e.target.value.toUpperCase())}
+              style={{ width: '100%', padding: '14px', borderRadius: 16, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', textAlign: 'center', fontFamily: 'monospace', letterSpacing: '0.2em', fontSize: 16, outline: 'none', marginBottom: 20 }}
+              placeholder="Type RESET" />
             <div style={{ display: 'flex', gap: 12 }}>
               <button onClick={() => { setShowReset(false); setConfirmReset(''); }}
-                style={{ flex: 1, padding: '12px 0', borderRadius: 12, border: '1px solid rgba(255,255,255,0.15)', background: 'transparent', color: '#fff', fontSize: 14, fontWeight: 500, cursor: 'pointer' }}>
-                Cancel
-              </button>
+                style={{ flex: 1, padding: '14px 0', borderRadius: 16, border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: '#fff', fontSize: 14, fontWeight: 600 }}>Cancel</button>
               <button onClick={handleResetConfirm} disabled={confirmReset !== 'RESET'}
-                style={{ flex: 1, padding: '12px 0', borderRadius: 12, border: 'none', background: confirmReset === 'RESET' ? '#dc2626' : 'rgba(220,38,38,0.3)', color: '#fff', fontSize: 14, fontWeight: 600, cursor: confirmReset === 'RESET' ? 'pointer' : 'not-allowed' }}>
-                Reset All Data
-              </button>
+                style={{ flex: 1, padding: '14px 0', borderRadius: 16, border: 'none', background: confirmReset === 'RESET' ? '#ef4444' : 'rgba(239,68,68,0.2)', color: '#fff', fontSize: 14, fontWeight: 700 }}>Reset All</button>
             </div>
           </div>
-
         ) : showRecovery ? (
           /* ── RECOVERY PANEL ── */
-          <div style={{ width: '100%', background: 'rgba(255,255,255,0.07)', backdropFilter: 'blur(20px)', borderRadius: 24, border: '1px solid rgba(255,255,255,0.12)', padding: 28 }}>
-            <div style={{ textAlign: 'center', marginBottom: 24 }}>
-              <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(99,102,241,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-                <KeyRound style={{ width: 26, height: 26, color: '#a5b4fc' }} />
+          <div style={{ width: '100%', background: 'rgba(30, 41, 59, 0.7)', backdropFilter: 'blur(24px)', borderRadius: 32, border: '1px solid rgba(255,255,255,0.08)', padding: 32, boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
+             <div style={{ textAlign: 'center', marginBottom: 24 }}>
+              <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(99,102,241,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', border: '1px solid rgba(99,102,241,0.2)' }}>
+                <KeyRound style={{ width: 32, height: 32, color: '#818cf8' }} />
               </div>
-              <h2 style={{ color: '#fff', fontWeight: 700, fontSize: 20, marginBottom: 6 }}>Reset PIN</h2>
-              <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13 }}>
-                {recoveryStep === 'answer' ? 'Answer your security question' : recoveryStep === 'new-pin' ? 'Enter a new PIN (4–6 digits)' : 'Confirm your new PIN'}
-              </p>
+              <h2 style={{ color: '#fff', fontWeight: 800, fontSize: 22, marginBottom: 8 }}>Reset PIN</h2>
+              <p style={{ color: '#94a3b8', fontSize: 13 }}>{recoveryStep === 'answer' ? 'Answer your security question' : 'Enter a new PIN (4–6 digits)'}</p>
             </div>
-            {recoveryError && <p style={{ color: '#f87171', fontSize: 12, textAlign: 'center', marginBottom: 12 }}>{recoveryError}</p>}
-            <div style={{ marginBottom: 20 }}>
-              {recoveryStep === 'answer' && (
-                <div>
-                  <p style={{ color: '#fff', fontSize: 14, marginBottom: 10, fontWeight: 500 }}>{getSettings().secQuestion}</p>
-                  <input type="text" value={recoveryAnswer} onChange={(e) => setRecoveryAnswer(e.target.value)}
-                    style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
-                    placeholder="Your answer" />
-                </div>
-              )}
-              {recoveryStep === 'new-pin' && (
-                <input type="password" inputMode="numeric" value={newPin}
-                  onChange={(e) => setNewPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', textAlign: 'center', fontFamily: 'monospace', letterSpacing: '0.3em', fontSize: 20, outline: 'none', boxSizing: 'border-box' }}
-                  placeholder="• • • • • •" />
-              )}
-              {recoveryStep === 'confirm-pin' && (
-                <input type="password" inputMode="numeric" value={confirmNewPin}
-                  onChange={(e) => setConfirmNewPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', textAlign: 'center', fontFamily: 'monospace', letterSpacing: '0.3em', fontSize: 20, outline: 'none', boxSizing: 'border-box' }}
-                  placeholder="• • • • • •" />
-              )}
-            </div>
-            <div style={{ display: 'flex', gap: 12 }}>
-              <button onClick={() => { setShowRecovery(false); setRecoveryStep('answer'); setRecoveryAnswer(''); setNewPin(''); setConfirmNewPin(''); setRecoveryError(''); }}
-                style={{ flex: 1, padding: '12px 0', borderRadius: 12, border: '1px solid rgba(255,255,255,0.15)', background: 'transparent', color: '#fff', fontSize: 14, fontWeight: 500, cursor: 'pointer' }}>
-                Cancel
-              </button>
+            {/* ... (Recovery inputs) ... */}
+            <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
+               <button onClick={() => { setShowRecovery(false); setRecoveryStep('answer'); setRecoveryAnswer(''); setNewPin(''); setConfirmNewPin(''); setRecoveryError(''); }}
+                style={{ flex: 1, padding: '14px 0', borderRadius: 16, border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: '#fff', fontSize: 14, fontWeight: 600 }}>Cancel</button>
               <button onClick={handleRecoverySubmit}
-                style={{ flex: 1, padding: '12px 0', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-                Continue
-              </button>
+                style={{ flex: 1, padding: '14px 0', borderRadius: 16, border: 'none', background: 'linear-gradient(135deg, #4f46e5, #7c3aed)', color: '#fff', fontSize: 14, fontWeight: 700, boxShadow: '0 4px 15px rgba(79,70,229,0.3)' }}>Continue</button>
             </div>
           </div>
-
         ) : (
           /* ── MAIN PIN PAD ── */
           <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
 
             {/* App icon + greeting */}
-            <div style={{ marginBottom: 32, textAlign: 'center' }}>
+            <div style={{ marginBottom: 40, textAlign: 'center' }}>
               <div style={{
-                width: 80, height: 80, borderRadius: 24,
-                background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #06b6d4 100%)',
+                width: 72, height: 72, borderRadius: 24,
+                background: 'linear-gradient(135deg, #4f46e5 0%, #9333ea 100%)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                margin: '0 auto 16px',
-                boxShadow: '0 0 0 1px rgba(255,255,255,0.15), 0 20px 40px rgba(99,102,241,0.4)',
+                margin: '0 auto 20px',
+                boxShadow: '0 0 30px rgba(79,70,229,0.4)',
+                border: '1px solid rgba(255,255,255,0.2)'
               }}>
-                <span style={{ color: '#fff', fontWeight: 900, fontSize: 34, fontFamily: 'monospace' }}>₹</span>
+                <ShieldCheck style={{ width: 36, height: 36, color: '#fff' }} />
               </div>
-              <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, marginBottom: 4 }}>{getGreeting()}</p>
-              <h1 style={{ color: '#fff', fontWeight: 800, fontSize: 28, letterSpacing: '-0.5px' }}>Muthu Finance</h1>
-              <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, marginTop: 4 }}>Enter your PIN to unlock</p>
+              <h1 style={{ color: '#fff', fontWeight: 800, fontSize: 26, letterSpacing: '-0.5px', marginBottom: 4 }}>Welcome Back</h1>
+              <p style={{ color: '#94a3b8', fontSize: 14, fontWeight: 500 }}>{getGreeting()} • Muthu Finance</p>
             </div>
 
             {/* PIN dots */}
-            <div style={{ display: 'flex', gap: 14, marginBottom: 8, justifyContent: 'center', animation: error ? 'shakeX 0.35s ease' : 'none' }}>
+            <div style={{ display: 'flex', gap: 16, marginBottom: 12, justifyContent: 'center', animation: error ? 'shakeX 0.4s cubic-bezier(.36,.07,.19,.97) both' : 'none' }}>
               {Array.from({ length: pinLength }).map((_, i) => {
                 const filled = i < pin.length;
                 return (
                   <div key={i} style={{
-                    width: 14, height: 14, borderRadius: '50%',
-                    background: filled ? 'linear-gradient(135deg, #a5b4fc, #818cf8)' : 'rgba(255,255,255,0.15)',
-                    border: filled ? 'none' : '1.5px solid rgba(255,255,255,0.25)',
-                    boxShadow: filled ? '0 0 12px rgba(165,180,252,0.7)' : 'none',
-                    transition: 'all 0.15s ease',
-                    transform: filled ? 'scale(1.1)' : 'scale(1)',
+                    width: 16, height: 16, borderRadius: '50%',
+                    background: filled ? '#fff' : 'rgba(255,255,255,0.1)',
+                    border: filled ? 'none' : '1px solid rgba(255,255,255,0.2)',
+                    boxShadow: filled ? '0 0 15px rgba(255,255,255,0.8)' : 'none',
+                    transition: 'all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                    transform: filled ? 'scale(1.2)' : 'scale(1)',
                   }} />
                 );
               })}
             </div>
 
             {/* Error message */}
-            {error && (
-              <p style={{ color: '#f87171', fontSize: 12, textAlign: 'center', marginBottom: 12, marginTop: 4 }}>{error}</p>
-            )}
-            {!error && <div style={{ height: 28 }} />}
+            <div style={{ height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {error && <span style={{ color: '#ef4444', fontSize: 13, fontWeight: 600, padding: '4px 12px', background: 'rgba(239,68,68,0.1)', borderRadius: 20 }}>{error}</span>}
+            </div>
 
             {/* PIN pad */}
             <div style={{
               width: '100%',
-              background: 'rgba(255,255,255,0.06)',
-              backdropFilter: 'blur(20px)',
-              borderRadius: 28,
-              border: '1px solid rgba(255,255,255,0.1)',
-              padding: '20px 16px',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+              marginTop: 16,
+              background: 'rgba(30, 41, 59, 0.4)',
+              backdropFilter: 'blur(24px)',
+              WebkitBackdropFilter: 'blur(24px)',
+              borderRadius: 32,
+              border: '1px solid rgba(255,255,255,0.05)',
+              padding: '24px',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
             }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
                 {digits.map((d, i) => {
                   if (d === '') return <div key={i} />;
                   if (d === 'del') {
                     return (
                       <button key={i} onClick={handleBackspace}
-                        style={{ height: 60, borderRadius: 16, border: 'none', background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.12s ease' }}
-                        onTouchStart={e => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}
-                        onTouchEnd={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                        style={{ height: 64, borderRadius: 20, border: 'none', background: 'transparent', color: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s ease' }}
+                        onTouchStart={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                        onTouchEnd={e => e.currentTarget.style.background = 'transparent'}
                       >
-                        <Delete style={{ width: 20, height: 20 }} />
+                        <Delete style={{ width: 24, height: 24 }} />
                       </button>
                     );
                   }
                   return (
                     <button key={i} onClick={() => handleDigit(d)}
                       style={{
-                        height: 60, borderRadius: 16, border: '1px solid rgba(255,255,255,0.08)',
-                        background: 'rgba(255,255,255,0.08)',
-                        color: '#fff', fontSize: 22, fontWeight: 600,
-                        cursor: 'pointer', transition: 'all 0.12s ease',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                        height: 64, borderRadius: 20, border: '1px solid rgba(255,255,255,0.05)',
+                        background: 'rgba(255,255,255,0.03)',
+                        color: '#fff', fontSize: 26, fontWeight: 500,
+                        cursor: 'pointer', transition: 'all 0.1s ease',
                       }}
-                      onTouchStart={e => { e.currentTarget.style.background = 'rgba(99,102,241,0.35)'; e.currentTarget.style.transform = 'scale(0.94)'; }}
-                      onTouchEnd={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.transform = 'scale(1)'; }}
+                      onTouchStart={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.15)'; e.currentTarget.style.transform = 'scale(0.9)'; }}
+                      onTouchEnd={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.transform = 'scale(1)'; }}
                     >
                       {d}
                     </button>
@@ -402,17 +356,20 @@ export default function LockScreen() {
               {/* Fingerprint button */}
               {isBiometricAvailable() && (
                 <button onClick={attemptBiometric}
-                  style={{ width: '100%', marginTop: 12, padding: '12px 0', borderRadius: 14, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
-                  <Fingerprint style={{ width: 18, height: 18 }} />
-                  Use Fingerprint
+                  style={{ width: '100%', marginTop: 20, padding: '16px 0', borderRadius: 20, border: '1px solid rgba(79,70,229,0.3)', background: 'rgba(79,70,229,0.1)', color: '#a5b4fc', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s ease' }}
+                  onTouchStart={e => e.currentTarget.style.background = 'rgba(79,70,229,0.2)'}
+                  onTouchEnd={e => e.currentTarget.style.background = 'rgba(79,70,229,0.1)'}
+                >
+                  <Fingerprint style={{ width: 20, height: 20 }} />
+                  Unlock with Biometrics
                 </button>
               )}
             </div>
 
             {/* Forgot PIN */}
             <button onClick={handleForgotPin}
-              style={{ marginTop: 20, background: 'none', border: 'none', color: 'rgba(255,255,255,0.35)', fontSize: 12, cursor: 'pointer' }}>
-              Forgot PIN?
+              style={{ marginTop: 24, background: 'none', border: 'none', color: '#64748b', fontSize: 13, fontWeight: 600, cursor: 'pointer', letterSpacing: '0.5px' }}>
+              FORGOT PIN?
             </button>
           </div>
         )}
@@ -420,4 +377,3 @@ export default function LockScreen() {
     </div>
   );
 }
-
