@@ -4,6 +4,13 @@ import { getSettings, saveSettings } from '../utils/storage';
 const AppContext = createContext(null);
 export function AppProvider({ children }) {
   const [theme, setThemeState] = useState('system');
+  
+  // Puthu Color Theme State
+  const [colorTheme, setColorThemeState] = useState(() => {
+    const settings = getSettings();
+    return settings.colorTheme || 'default';
+  });
+
   const [toasts, setToasts] = useState([]);
   const [isLocked, setIsLocked] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -25,11 +32,13 @@ export function AppProvider({ children }) {
   useEffect(() => {
     const settings = getSettings();
     if (settings.theme) setThemeState(settings.theme);
+    if (settings.colorTheme) setColorThemeState(settings.colorTheme);
 
     const lockEnabled = settings.lockEnabled && settings.pinHash && settings.pinSalt;
     setIsLocked(!!lockEnabled);
   }, []);
 
+  // Light/Dark Mode Logic
   useEffect(() => {
     const root = document.documentElement;
     if (theme === 'dark') {
@@ -46,10 +55,14 @@ export function AppProvider({ children }) {
     }
   }, [theme]);
 
-  // Re-lock on app resume from background (Capacitor)
+  // Color Theme Application Logic
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', colorTheme);
+  }, [colorTheme]);
+
   useEffect(() => {
     let backgroundTime = null;
-    const GRACE_PERIOD = 30000; // 30 seconds
+    const GRACE_PERIOD = 30000; 
 
     async function setupAppListener() {
       try {
@@ -91,16 +104,13 @@ export function AppProvider({ children }) {
             }
           }
 
-          // Check on initial load
           checkSMS();
 
           App.addListener('appStateChange', ({ isActive }) => {
             const settings = getSettings();
-
             if (!isActive) {
               backgroundTime = Date.now();
             } else {
-              // App resumed
               checkSMS();
               if (backgroundTime) {
                 const elapsed = Date.now() - backgroundTime;
@@ -112,14 +122,11 @@ export function AppProvider({ children }) {
             }
           });
         }
-      } catch (e) {
-        // Not on native platform
-      }
+      } catch (e) {}
     }
     setupAppListener();
   }, []);
 
-  // Firebase Two-Way Sync Listener
   useEffect(() => {
     async function startSync() {
       try {
@@ -128,11 +135,10 @@ export function AppProvider({ children }) {
 
         const unsub = onSnapshot(
           collection(db, 'users/muthu-abi/transactions'),
-          { includeMetadataChanges: true }, // CRITICAL: needed to detect local vs remote changes
+          { includeMetadataChanges: true },
           (snapshot) => {
             let changed = false;
             snapshot.docChanges({ includeMetadataChanges: true }).forEach((change) => {
-              // Skip changes that originated from THIS device (still pending upload to server)
               if (change.doc.metadata.hasPendingWrites) return;
 
               const data = change.doc.data();
@@ -148,13 +154,12 @@ export function AppProvider({ children }) {
                 if (idx === -1) {
                   items.push(cleanData);
                 } else {
-                  // Only update if remote version is newer
                   const existingUpdated = items[idx].updatedAt || items[idx].createdAt || '';
                   const remoteUpdated = cleanData.updatedAt || cleanData.createdAt || '';
                   if (remoteUpdated >= existingUpdated) {
                     items[idx] = cleanData;
                   } else {
-                    return; // Skip - local is newer
+                    return; 
                   }
                 }
                 setAll(entity, items);
@@ -190,6 +195,12 @@ export function AppProvider({ children }) {
     saveSettings({ theme: t });
   }, []);
 
+  // Theme Save Function
+  const setColorTheme = useCallback((ct) => {
+    setColorThemeState(ct);
+    saveSettings({ colorTheme: ct });
+  }, []);
+
   const setProfileName = useCallback((name) => {
     setProfileNameState(name);
     saveSettings({ [`profileName_${deviceProfile}`]: name });
@@ -214,9 +225,6 @@ export function AppProvider({ children }) {
   const lock = useCallback(() => setIsLocked(true), []);
   const triggerRefresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
-  // canEdit: true only if viewing YOUR OWN profile
-  // (Muthu can edit when viewFilter=Muthu, Abi when viewFilter=Abi)
-  // Family view = read-only for everyone
   const canEdit = useMemo(() => viewFilter === deviceProfile, [viewFilter, deviceProfile]);
 
   return (
@@ -224,6 +232,8 @@ export function AppProvider({ children }) {
       value={{
         theme,
         setTheme,
+        colorTheme,      // Exporting color Theme
+        setColorTheme,   // Exporting function
         profileName,
         setProfileName,
         toasts,
