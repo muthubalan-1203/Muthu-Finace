@@ -27,6 +27,43 @@
   * {
     @apply box-border;
   }
+
+  /* 🎨 DYNAMIC COLOR THEMES */
+  
+  /* 1. Default (Indigo) */
+  :root {
+    --color-brand-400: #818cf8;
+    --color-brand-500: #6366f1; 
+    --color-brand-600: #4f46e5;
+  }
+  
+  /* 2. Ocean (Sky Blue) */
+  :root[data-theme="ocean"] {
+    --color-brand-400: #38bdf8;
+    --color-brand-500: #0ea5e9; 
+    --color-brand-600: #0284c7;
+  }
+
+  /* 3. Forest (Emerald Green) */
+  :root[data-theme="forest"] {
+    --color-brand-400: #34d399;
+    --color-brand-500: #10b981; 
+    --color-brand-600: #059669;
+  }
+
+  /* 4. Sunset (Rose Red) */
+  :root[data-theme="sunset"] {
+    --color-brand-400: #fb7185;
+    --color-brand-500: #f43f5e; 
+    --color-brand-600: #e11d48;
+  }
+
+  /* 5. Midnight (Violet) */
+  :root[data-theme="midnight"] {
+    --color-brand-400: #a78bfa;
+    --color-brand-500: #8b5cf6; 
+    --color-brand-600: #7c3aed;
+  }
 }
 
 @layer components {
